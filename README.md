@@ -1,2 +1,38 @@
-# What_is_Yocto_Project
-Yocto 프로젝트란 무엇인가?
+# Yocto 프로젝트란 무엇인가?
+
+* 임베디드 장치용 맞춤형 배포판 빌드를 위한 오픈 소스 프로젝트
+* 하드웨어의 기본 아키텍처와 독립적인 임베디드 개발을 위한 공통 기반을 정의함
+* 쉽게 말해서, 내가 개발하고자 하는 임베디드 환경(ARM, x86 등)에 맞게 커스텀 리눅스를 빌드해주는 도구 (셋팅의 번거로움을 줄여주는 역할)
+  - Yocto: 오픈 임베디드 빌드 시스템이 리눅스 소프트웨어 스택을 빌드하는 데 필요한 모든 정보를 제공함 (크로스 컴파일러, 라이브러리 등)
+  - bitbake: Yocto에서 제공하는 정보를 기반으로 빌드를 수행하는 빌드 도구
+  - Poky: 빌드를 위해 필요한 소스 코드를 가져오거나, 빌드 환경 설정, 컴파일, 생성된 이미지를 설치하는 방법을 기술하는 .bb 파일이 들어 있음
+
+## 실습 환경
+
+* 예제는 ubuntu 18.04, Yocto dunfell 버전을 기반으로 설명할 것이다. (Yocto, 쉽게 이해하고 깊게 다루기 -조운래 저- 참조)
+
+## 설치 패키지
+
+* ubuntu에서 패키지 설치하기
+
+`$ sudo apt install gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev pylint3 xterm make xsltproc docbook-utils fop dblatex xmlto`
+
+* 추가 설치 패키지
+
+`$ sudo apt install git`
+`$ sudo apt install tree`
+`$ sudo apt install python3.8`
+
+혹은 [sourceforce 사이트](https://sourceforge.net/projects/greatyocto/files/)에서 installed ubuntu great toctoova 가상 파일을 다운로드해서 사용해도 된다. (계정: great / PW: great) VirtualBox 7.0.8 버전 이상, Extension Pack Manager에서 확장 팩을 설치하는 것을 권장한다. 권장 사양은 CPU 8 Core, RAM 8192MB 이다.
+
+# bitbake
+
+...
+
+# poky
+
+...
+
+# 빌드 속도 개선하기
+
+...
