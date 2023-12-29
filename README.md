@@ -20,7 +20,9 @@
 * 추가 설치 패키지
 
 `$ sudo apt install git`
+
 `$ sudo apt install tree`
+
 `$ sudo apt install python3.8`
 
 혹은 [sourceforce 사이트](https://sourceforge.net/projects/greatyocto/files/)에서 installed ubuntu great toctoova 가상 파일을 다운로드해서 사용해도 된다. (계정: great / PW: great) VirtualBox 7.0.8 버전 이상, Extension Pack Manager에서 확장 팩을 설치하는 것을 권장한다. 권장 사양은 CPU 8 Core, RAM 8192MB 이다.
