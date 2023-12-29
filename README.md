@@ -15,19 +15,41 @@
 
 * ubuntu에서 패키지 설치하기
 
-`$ sudo apt install gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev pylint3 xterm make xsltproc docbook-utils fop dblatex xmlto`
+```$ sudo apt install gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev pylint3 xterm make xsltproc docbook-utils fop dblatex xmlto```
 
 * 추가 설치 패키지
 
-`$ sudo apt install git`
-
-`$ sudo apt install tree`
-
-`$ sudo apt install python3.8`
+```
+$ sudo apt install git
+$ sudo apt install tree
+$ sudo apt install python3.8
+```
 
 혹은 [sourceforce 사이트](https://sourceforge.net/projects/greatyocto/files/)에서 installed ubuntu great toctoova 가상 파일을 다운로드해서 사용해도 된다. (계정: great / PW: great) VirtualBox 7.0.8 버전 이상, Extension Pack Manager에서 확장 팩을 설치하는 것을 권장한다. 권장 사양은 CPU 8 Core, RAM 8192MB 이다.
 
 # bitbake
+
+* bitbake: 파이썬, 셸 스크립트 혼합 코드를 분석하는 작업 스케줄러, 임베디드 리눅스의 크로스 컴파일을 위한 패키지 및 관련 파일을 빌드하는 데 사용되는 도구
+  - Visual C++과 같은 빌드 도구의 일종
+  - Poky 안에 포함되어 있지만 단독으로도 여러 가지를 수행할 수 있음
+
+## bitbake 설치
+
+* 소스 받기 (dunfell 버전): `$ wget http://git.openembedded.org/bitbake/snapshot/bitbake-1.46.0.tar.gz`
+
+* 압축 풀기: `$ tar -xzf bitbake-1.46.0.tar.gz`
+  - bitbake-1.46.0/bin 디렉토리에 bitbake 실행 파일이 존재함
+
+## 메타데이터
+
+* 메타데이터 는 소프트웨어를 어떻게 빌드할지, 그리고 빌드하려는 소프트웨어들 간에 어떤 의존성이 있는지 기술하고 있음 (환경 설정 파일는 변수만 있고, 나머지는 변수와 함수(task)가 있음)
+  - 환경 설정 파일(.conf): 전역 변수 집합
+  - 레시피 파일(.bb): 소프트웨어를 어디서 다운로드할지, 받은 소프트웨어를 어떻게 빌드할지, 빌드된 산출물을 어디에 위치할지 기술되어 있음
+  - 클래스 파일(.bbclass): 여기에 선언된 변수, 함수는 해당 클래스 파일을 상속(inherit)한 레시피에서만 사용할 수 있음
+  - 레시피 확장 파일(.bbappend): 레시피 파일에서 선언된 변수, 함수를 재정의할 수 있게 해주며, 레이어 개념을 알아야 함
+  - 인클루드 파일(.inc): 클래스 파일은 비공식적인 기능을 제공하는 반면, 인클루드 파일은 비공식적인 내용을 공유할 때 사용함
+ 
+* bitbake는 메타데이터를 활용하여 루트 파일 시스템 이미지, 커널 이미지, 부트로더 이미지를 생성함
 
 ...
 
