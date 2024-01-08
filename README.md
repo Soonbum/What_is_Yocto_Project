@@ -33,12 +33,17 @@ $ sudo apt install python3.8
   - Visual C++과 같은 빌드 도구의 일종
   - Poky 안에 포함되어 있지만 단독으로도 여러 가지를 수행할 수 있음
 
-## bitbake 설치
+## bitbake 설치 및 실행
 
 * 소스 받기 (dunfell 버전): `$ wget http://git.openembedded.org/bitbake/snapshot/bitbake-1.46.0.tar.gz`
 
 * 압축 풀기: `$ tar -xzf bitbake-1.46.0.tar.gz`
   - bitbake-1.46.0/bin 디렉토리에 bitbake 실행 파일이 존재함
+
+* 실행하기: `$ export PATH=/home/user/bitbake_src/bitbake-1.46.0/bin:$PATH`
+  - bitbake-1.46.0/bin 디렉토리를 $PATH에 추가할 것
+  - `$ bitbake --version` 버전이 제대로 출력되면 성공한 것
+  
 
 ## 메타데이터
 
@@ -57,9 +62,86 @@ $ sudo apt install python3.8
   - 예) BITBAKE_VAR = "value" 또는 BITBAKE_VAR = 'value'
   - #로 시작하면 주석으로 간주함
 
-## bitbake 실행
+## bitbake로 "Hello! bitbake world!" 출력해보기
 
-...
+1. BBPATH 설정
+  - bitbake 실행 파일이 특정 디텍토리에 만들어진 메타데이터들을 인식할 수 있도록 함
+  - `$ export BBPATH=/home/user/bitbake_test/`
+
+2. BBPATH 아래로 다음과 같은 디렉토리 및 파일을 생성할 것
+
+```
+bitbake_test/
+|- classes
+|   |- base.bbclass  # 4. 클래스 파일 분석
+|- conf
+|   |- bblayers.conf  # 1. 레이어를 먼저 찾음
+|   |- bitbake.conf  # 3. 환경 설정 파일 분석 
+|- mylayer
+    |- conf
+    |   |- layer.conf  # 2. 레시피 파일의 위치 파악
+    |- hello.bb  # 5. 마지막으로 레시피 파일 실행
+```
+
+파일 내용은 다음과 같습니다.
+
+bitbake.conf
+
+```
+# 기본적인 환경 설정
+PN = "${bb.parse.vars-from_file(d.getVar('FILE', False),d)[0]or 'defaultpkgname'}"  # 레시피 파일의 이름
+TMPDIR = "${TOPDIR}/tmp"    # 중간 산출물을 저장하는 디렉토리
+CACHE = "${TOPDIR}/cache"
+STAMP = "${TOPDIR}/${PN}/stamps"    # 태스크에 대한 수행 이력 기록
+T     = "${TOPDIR}/${PN}/work"    # 임시 생성된 태스크 실행 로그, 태스크 스크립트 파일 등
+B     = "${TOPDIR}/${PN}"    # 레시피의 빌드 과정에서 함수를 실행하는 디렉토리
+```
+
+bblayers.conf
+
+```
+# 빌드 수행을 위해 어떤 레이어들이 존재하는지 알려줌
+# 레이어: 연관된 메타데이터들을 포함하는 저장소(디렉토리)
+BBLAYERS ?= " \
+    /home/user/bitbake_test/mylayer \
+"
+```
+
+layer.conf
+
+```
+# 현재 레이어의 경로와 레이어 내에 있는 레시피 파일들(.bb, .bbappend)의 경로를 알려줌
+BBPATH .= ":${LAYERDIR}"
+BBFILES += "${LAYERDIR}/*.bb"
+BBFILE_COLLECTIONS += "mylayer"
+BBFILE_PATTERN_mylayer := "^${LAYERDIR}/"
+```
+
+base.bbclass
+
+```
+# bitbake가 실행되기 위해 반드시 bbclass 파일이 존재해야 함
+addtask do_build    # 태스크 추가
+```
+
+hello.bb
+
+```
+# 레시피 파일: 실제로 bitbake가 실행하는 주체
+# 레시피 파일 이름 규칙: "<package_name>_<package_version>_<package_revision>.bb", 예를 들면 "linux-yocto_5.4_r0.bb"
+DESCRIPTION = "hello world example"
+PN = "hello"    # 패키지 이름 (생략할 경우 파일명이 PN이 됨)
+PV = "1"    # 패키지 버전 (생략할 경우 r0)
+python do_build() {
+    bb.warn("Hello! bitbake world!")
+}
+```
+
+3. 레시피 파일 실행하기
+  - `$ bitbake <recipe filename>`: 전체 태스크 실행
+  - `$ bitbake <recipe filename> -c <take name>`: 특정 태스크 실행
+  - `$ bitbake <recipe filename> -f`: 이미 수행한 태스크 강제 실행 (이전 태스크 변경 여부와 실행 이력을 체크하기 때문)
+  - 위의 예제의 경우 `$ bitbake hello -c build` 또는 `$ bitbake hello -f`라고 하면 "Hello! bitbake workd!" 메시지를 볼 수 있음
 
 # poky
 
