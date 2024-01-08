@@ -73,14 +73,14 @@ $ sudo apt install python3.8
 ```
 bitbake_test/
 |- classes
-|   |- base.bbclass  # 4. 클래스 파일 분석
+|   |- base.bbclass    # 4. 클래스 파일 분석
 |- conf
-|   |- bblayers.conf  # 1. 레이어를 먼저 찾음
-|   |- bitbake.conf  # 3. 환경 설정 파일 분석 
+|   |- bblayers.conf   # 1. 레이어를 먼저 찾음
+|   |- bitbake.conf    # 3. 환경 설정 파일 분석 
 |- mylayer
     |- conf
     |   |- layer.conf  # 2. 레시피 파일의 위치 파악
-    |- hello.bb  # 5. 마지막으로 레시피 파일 실행
+    |- hello.bb        # 5. 마지막으로 레시피 파일 실행
 ```
 
 파일 내용은 다음과 같습니다.
@@ -90,11 +90,11 @@ bitbake.conf
 ```
 # 기본적인 환경 설정
 PN = "${bb.parse.vars-from_file(d.getVar('FILE', False),d)[0]or 'defaultpkgname'}"  # 레시피 파일의 이름
-TMPDIR = "${TOPDIR}/tmp"    # 중간 산출물을 저장하는 디렉토리
+TMPDIR = "${TOPDIR}/tmp"            # 중간 산출물을 저장하는 디렉토리
 CACHE = "${TOPDIR}/cache"
 STAMP = "${TOPDIR}/${PN}/stamps"    # 태스크에 대한 수행 이력 기록
-T     = "${TOPDIR}/${PN}/work"    # 임시 생성된 태스크 실행 로그, 태스크 스크립트 파일 등
-B     = "${TOPDIR}/${PN}"    # 레시피의 빌드 과정에서 함수를 실행하는 디렉토리
+T     = "${TOPDIR}/${PN}/work"      # 임시 생성된 태스크 실행 로그, 태스크 스크립트 파일 등
+B     = "${TOPDIR}/${PN}"           # 레시피의 빌드 과정에서 함수를 실행하는 디렉토리
 ```
 
 bblayers.conf
@@ -131,7 +131,7 @@ hello.bb
 # 레시피 파일 이름 규칙: "<package_name>_<package_version>_<package_revision>.bb", 예를 들면 "linux-yocto_5.4_r0.bb"
 DESCRIPTION = "hello world example"
 PN = "hello"    # 패키지 이름 (생략할 경우 파일명이 PN이 됨)
-PV = "1"    # 패키지 버전 (생략할 경우 r0)
+PV = "1"        # 패키지 버전 (생략할 경우 r0)
 python do_build() {
     bb.warn("Hello! bitbake world!")
 }
@@ -152,6 +152,61 @@ python do_build() {
 
 * 오픈임베디드: 임베디드 장치용 리눅스 배포판을 만드는 데 사용되는 빌드 자동화 프로임워크 및 크로스 컴파일러 환경
   - 레시피를 사용해 소스 코드를 저장소에서 가져오고, 필요할 경우 패치를 적용하여 소스 코드를 컴파일 및 링크하고 패키지 및 부팅이 가능한 이미지를 생성함
+
+## Poky 소스 다운로드 및 빌드
+
+* Poky 소스를 다운로드 받을 디렉토리로 이동한 후 git을 통해 다운로드한다.
+  - dunfell 브랜치를 사용할 것이므로 dunfell 브랜치로 체크아웃한다.
+
+```
+$ mkdir poky_src
+$ cd poky_src
+$ git clone git://git.yoctoproject.org/poky
+$ git checkout dunfell
+```
+
+* 디렉토리 구조는 다음과 같다.
+
+`$ tree -d -L 2 poky_src/`
+
+```
+poky_src/
+|- poky
+    |- bitbake
+    |- contrib
+    |- documentation
+    |- meta            # 오픈임베디드 코어 레이어
+    |- meta-poky       # Yocto 배포 참조 레이어
+    |- meta-selftest   # oe-selftest 스크립트가 사용하는 bitbake 테스트 레이어
+    |- meta-skeleton   # 커스텀 레이어를 생성하는 데 사용되는 템플릿 레이어
+    |- meta-yocto-bsp  # Yocto 프로젝트의 BSP 레이어
+    |- scripts
+```
+
+* Poky 소스 빌드하기
+  - poky_src 디렉토리에서 실행한다: `$ source poky/oe-init-build-env`
+  - 실행 후에는 현재 작업 디렉토리 위치가 build 디렉토리로 변경된다.
+  - 빌드를 실행하여 Yocto에서 제공된 커스텀 리눅스 이미지를 만든다: `$ bitbake core-image-minimal -k` (-k 옵션은 오류가 발생하더라도 끝까지 빌드를 계속 하라는 뜻)
+
+* oe-init-build-env 스크립트
+  - 기본 빌드 환경을 설정한다.
+  - 이 스크립트를 실행하면 다음과 같은 conf 파일이 생성된다.
+
+```
+poky_src/
+|- build
+    |- conf
+        |- bblayers.conf        # 생성된 레이어들의 정보를 bitbake에게 알려줌, 레이어들의 경로는 BBLAYERS 변수에 할당됨
+        |- local.conf           # 환경 설정 파일, bitbake.conf 파일에서 이 파일을 인클루드해 사용한다. (타깃 머신 지정, 크로스 툴체인 지정, 전역 변수 처리)
+        |- templateconf.cfg     # 프로젝트를 생성하는 데 사용되는 템플릿 환경 설정을 포함하는 디렉토리를 포함하고 있음
+```
+
+* 빌드 결과를 QEMU 에뮬레이터로 실행
+  - 이것을 사용하려면 `$ source poky/oe-init-build-env`를 실행한 다음에 `bitbake runqemu`를 실행해야 한다.
+  - 실행하는 방법은 다음과 같다. (비디오 콘솔을 따로 생성하지 않고 위에서 생성한 커스텀 리눅스 이미지를 동작시킴)
+  - `$ cd poky/scripts`
+  - `$ runqemu core-image-minimal nographic`
+  - 종료 시에는 `# poweroff`를 실행한다.
 
 ...
 
