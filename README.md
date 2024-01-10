@@ -56,7 +56,7 @@ $ sudo apt install python3.8
  
 * bitbake는 메타데이터를 활용하여 루트 파일 시스템 이미지, 커널 이미지, 부트로더 이미지를 생성함
 
-## bitbake 문법
+## bitbake 문법 (1)
   - 변수 타입 없음, 모든 값을 문자열로 인식함 ("value" 식으로 표현함)
   - 변수 이름에 제약을 두지 않음. 다만 관행적으로 변수 이름을 대문자로 시작하도록 함
   - 예) BITBAKE_VAR = "value" 또는 BITBAKE_VAR = 'value'
@@ -186,7 +186,7 @@ poky_src/
 * Poky 소스 빌드하기
   - poky_src 디렉토리에서 실행한다: `$ source poky/oe-init-build-env`
   - 실행 후에는 현재 작업 디렉토리 위치가 build 디렉토리로 변경된다.
-  - 빌드를 실행하여 Yocto에서 제공된 커스텀 리눅스 이미지를 만든다: `$ bitbake core-image-minimal -k` (-k 옵션은 오류가 발생하더라도 끝까지 빌드를 계속 하라는 뜻)
+  - 빌드를 실행하여 Yocto에서 제공된 커스텀 리눅스 이미지를 만든다: `$ bitbake core-image-minimal -k` (-k 옵션은 오류가 발생하더라도 끝까지 빌드를 계속 하라는 뜻) [여기서, 레시피 core-image-minimal은 다른 것이 될 수 있음]
   - 레시피 파일에서 사용하는 모든 환경 변수를 확인하는 방법: `$ bitbake core-image-minimal -e > env.txt` (메타데이터 분석 절차를 수행한 결과로 얻어진 변수, 함수를 env.txt로 저장)
   - `$ bitbake-getvar -r core-image-minimal DL_DIR`: 위와 비슷함, 이렇게 하면 DL_DIR 변수의 할당 과정을 상세하게 볼 수 있음
 
@@ -212,9 +212,102 @@ poky_src/
 
 # 빌드 속도 개선하기
 
-...
+* 이 부분은 필수가 아니므로 생략함
+  - PREMIRRORS(로컬 미러 저장소), sstate-cache(공유 상태 캐시)를 구성하여 소스를 미리 다운로드함으로써 fetch 시간을 단축하여 빌드 속도를 개선하는 것임
 
-# 레이어, 레시피 생성
+# Poky를 이용하여 레이어, 레시피 생성하기
+
+## Poky 다운로드
+
+```
+$ mkdir poky_src
+$ cd poky_src
+$ git clone git://git.yoctoproject.org/poky
+$ git checkout dunfell
+```
+
+## 예제 작성하기
+
+* 새로운 레이어 추가를 위해 meta-hello 디렉토리를 생성한다.
+
+* 이어서 meta-hello 디렉토리 아래에 conf, recipes-hello 디렉토리를 생성한다.
+
+* conf 디렉토리 아래에는 layer.conf 파일을, recipes-hello 디렉토리 아래에는 hello.bb 파일을 생성한다.
+
+```
+poky_src/
+|- poky
+|   |- meta-hello
+|       |- conf
+|           |- layer.conf
+|       |- recipes-hello
+|           |- hello.bb
+|- build
+    |- conf
+        |- bblayers.conf
+```
+
+layer.conf
+
+```
+BBPATH                    =. "${LAYERDIR}:"
+BBFILES                   += "${LAYERDIR}/recipes*/*.bb"
+BBFILE_COLLECTIONS        += "hello"
+BBFILE_PATTERN_hello      = "^${LAYERDIR}/"
+BBFILE_PRIORITY_hello     = "10"
+LAYERSERIES_COMPAT_hello  = "${LAYERSERIES_COMPAT_core}"
+```
+
+hello.bb
+
+```
+SUMMARY = "간단한 hello 예제"          # 패키지에 대한 간단한 소개. 한 줄로 입력하며 최대 80자.
+DESCRIPTION = "Simple hello example"  # 패키지와 기능에 대한 자세한 설명으로 여러 줄 가능
+LICENSE = "CLOSED"
+AUTHOR = "soonbum.jeong <peacemaker84@gmail.com>"  # 저자의 이름과 이메일 주소
+#HOMEPAGE = "URL을 입력하면 됨"
+
+do_printhello(){
+    bbwarn "hello world!"
+}
+addtask do_printhello after do_compile before do_install
+```
+
+bblayers.conf
+
+```
+# POLY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+POLY_BBLAYERS_CONF_VERSION = "2"
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+BBLAYERS ?= " \
+    /home/user/poky_src/poky/meta \
+    /home/user/poky_src/poky/meta-poky \
+    /home/user/poky_src/poky/meta-yocto-bsp \
+    /home/user/poky_src/poky/meta-hello \
+```
+
+※ 로그 출력 함수는 다음과 같다.
+Log Level | 파이썬 함수 | 셸 함수
+--------- | ---------- | --------
+plain | bb.plain(message) | bbplain message
+debug | bb.debug(message) | bbdebug level message
+note | bb.note(message) | bbnote message
+warn | bb.warn(message) | bbwarn message
+error | bb.error(message) | bberror message
+fatal | bb.fatal(message) | bbfatal message
+
+* 레이어가 정상적으로 추가되었는지 확인하는 방법은 다음과 같다.
+  - 레이어 이름, 경로, 우선순위가 표시됨
+  - `$ bitbake-layers show-layers`
+
+## 예제 실행하기
+
+* 실행하는 방법은 다음과 같다: `$ bitbake <recipe-name>`
+  - `$ bitbake hello`
+
+## bitbake 문법 (2)
 
 ...
 
