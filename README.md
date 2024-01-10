@@ -308,6 +308,10 @@ fatal | bb.fatal(message) | bbfatal message
   - `$ bitbake hello`
 
 ## bitbake 문법 (2)
+  - `DEPENDS = "hello"` : hello 레시피 파일에 의존함 (그것이 먼저 빌드되어야 함)
+  - `VAR ?= "yocto" : 기본값 할당 (처음 입력한 기본값 할당이 유지됨)
+  - `VAR ??= "yocto" : 약한 기본값 할당 (마지막에 입력한 기본값 할당으로 갱신됨), 그러나 '=', '?=' 연산자보다 우선순위가 낮음
+  - ???
 
 ...
 
