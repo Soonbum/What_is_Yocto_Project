@@ -217,7 +217,9 @@ poky_src/
 
 # Poky를 이용하여 레이어, 레시피 생성하기
 
-## Poky 다운로드
+## Poky 다운로드 및 빌드
+
+* Poky 소스 다운로드
 
 ```
 $ mkdir poky_src
@@ -225,6 +227,11 @@ $ cd poky_src
 $ git clone git://git.yoctoproject.org/poky
 $ git checkout dunfell
 ```
+
+* Poky 소스 빌드하기
+  - poky_src 디렉토리에서 실행한다: `$ source poky/oe-init-build-env`
+  - 실행 후에는 현재 작업 디렉토리 위치가 build 디렉토리로 변경된다.
+  - 빌드를 실행하여 Yocto에서 제공된 커스텀 리눅스 이미지를 만든다: `$ bitbake core-image-minimal -k`
 
 ## 예제 작성하기
 
@@ -239,7 +246,7 @@ poky_src/
 |- poky
 |   |- meta-hello
 |       |- conf
-|           |- layer.conf
+|       |   |- layer.conf
 |       |- recipes-hello
 |           |- hello.bb
 |- build
@@ -321,6 +328,101 @@ fatal | bb.fatal(message) | bbfatal message
   - `VAR3_append = "${VAR1}"` : 변수 후입 (VAR3 뒤에 VAR2을 붙임, 공백 없음) (늦은 할당) [Yocto honister 버전 이상에서는 :append로 바뀜]
   - `VAR1_remove = "123"` : 공백으로 구분된 "123"과 일치하는 문자열만 삭제함 ("123 456 789 123456789 789 456 123" --> " 456 789 123456789 789 456 ") [Yocto honister 버전 이상에서는 :remove로 바뀜]
   - 변수와 마찬가지로 함수 이름에도 _prepend, _append를 붙이면 본체 함수 앞뒤에 다른 함수가 자동으로 호출됨
+
+## hello 애플리케이션 레시피 작성
+
+* 간단한 hello.c 소스 파일을 생성한다. COPYING이라는 라이선스 파일도 함께 만들어 본다.
+
+```
+poky_src/
+|- poky
+|   |- meta-hello
+|       |- conf
+|       |   |- layer.conf
+|       |- recipes-hello
+|           |- hello.bb
+|           |- source
+|               |- hello.c
+|               |- COPYING
+|- build
+    |- conf
+        |- bblayers.conf
+```
+
+hello.c
+
+```
+#include <stdio.h>
+#include <unistd.h>
+
+int main(){
+    int i = 0;
+    while (i < 10) {
+        printf ("Hello world!\n");
+        sleep(1);
+    }
+    return 0;
+}
+```
+
+COPYING
+
+```
+EXAMPLE LICENSE FILE
+Copyright (C) 2024, Soonbum Jeong
+This is example license file.
+```
+
+* 이제 hello.c 애플리케이션 실행을 위해 hello.bb 레시피 파일을 다시 작성한다.
+
+hello.bb
+
+```
+DESCRIPTION = "Simple helloworld application example"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://COPYING;md5=80cade1587e04a9473701795d41a4f0c"  # COPYING 파일이 존재하는 source 디렉토리에서 다음을 실행하면 checksum을 얻을 수 있다. (`$ md5sum COPYING`)
+
+SRC_URI = "file://hello.c"
+SRC_URI_append = " file://COPYING"
+S = "${WORKDIR}"
+
+# S: bitbake가 빌드시 압축된 소스를 해제해 위치시키는 디렉토리, SRC_URI에서 로컬 소스 지정시 해당 소스가 빌드를 진행할 때 복사돼 위치하는 디렉토리
+# WORKDIR: 레시피를 빌드하면서 생성된 각종 정보를 저장하는 디렉토리 (`$ bitbake-getvar -r hello WORKDIR`로 확인 가능)
+
+do_compile() {
+    ${CC} hello.c ${LDFLAGS} -o hello
+}
+
+# D: 빌드의 결과물로 생성된 바이너리가 위치하는 경로
+
+# bin: /usr/bin (사용자 프로그램)
+# sbindir: /usr/sbin (시스템 관리 프로그램)
+# libdir: /usr/lib (라이브러리)
+# libexecdir: /usr/lib
+# sysconfdir: /etc (환경 설정 파일)
+# datadir: /usr/share
+# mandir: /usr/share/man
+# includedir: /usr/include
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 hello ${D}${bindir}
+}
+
+# THISDIR: bitbake가 현재 파싱하는 파일이 위치하고 있는 디렉토리 (recipes-hello)
+# FILESPATH: poky/meta/classes/base.bbclass 클래스 파일에 정의되어 있음 (오픈임베디드 빌드 시스템이 패치 및 파일을 검색할 때 사용하는 디렉토리 리스트를 갖고 있음)
+# FILESEXTRAPATHS: FILESPATH 변수를 확장함
+
+FILESEXTRAPATHS_prepend := "${THISDIR}/source:"
+FILES_${PN} += "${bindir}/hello"
+```
+
+* 레시피 파일 빌드하기
+
+```
+$ bitbake hello -c cleanall    # cleanall 태스크만 수행 (WORKDIR 변수가 가리키는 빌드 작업 디렉토리의 모든 결과물 삭제)
+$ bitbake hello                # 기본 태스크 수행 (기본 태스크를 나타내는 변수: BB_DEFAULT_TASK)
+```
 
 ...
 
