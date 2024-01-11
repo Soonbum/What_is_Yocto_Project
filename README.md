@@ -450,6 +450,30 @@ do_install  -------------------> ${WORKDIR}/${D}
 
 ## 라이선스
 
+* 라이선스 관련 중요한 변수 2가지가 있다.
+  - LICENSE: 사용하지 않을 경우 CLOSED, 그 외의 경우 라이선스 파일이 있다는 뜻이며 라이선스 파일과 checksum 값을 다음 변수에 기술해야 함
+  - LIC_FILES_CHKSUM: 라이선스 파일과 checkbum을 갖고 있는 변수. checksum은 보통 md5, sha256을 사용함
+
+예제1
+```
+# bzip 2 applet in busybox is based on lightly-modified bzip2-1.0.4 source
+# the GPL is version 2 only
+LICENSE = "GPLv2 & bzip2-1.0.4"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=de10de48642ab74318e893a61105afbb \
+                   "file://archival/libarchive/bz/LICENSE;md5=28e3301eae987e8cfe19988e98383dae"
+```
+
+* 이처럼 소프트웨어 패키지마다 다른 라이선스를 부여할 수 있고, 여러 개의 라이선스 목록을 가질 수도 있다.
+
+* 라이선스를 제공하는 방법은 다음 3가지 방법이 있다.
+  - 오픈임베디드 코드에서 기본적으로 제공하는 라이선스를 사용하는 방법
+    ```
+    LICENSE = "MIT"
+    LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+    ```
+  - 라이선스를 가진 오픈 소스를 사용하는 방법
+  - 자체적으로 라이선스를 부여하는 방법
+
 ...
 
 # 초기화 관리자 추가
