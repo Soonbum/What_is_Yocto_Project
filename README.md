@@ -530,6 +530,7 @@ $ bitbake core-image-minimal -C rootfs
   - `poky_src/build/tmp/work/qemux86_64-poky-linux/core-image-minimal/1.0-r0/rootfs/usr/bin`
 
 * QEMU 에뮬레이터를 실행한 후 hello를 실행해본다.
+  - `$ cd poky/scripts`
   - `$ runqemu core-image-minimal nographic`
   - root로 로그인한다.
   - `root&qemux86-64:~# hello`
