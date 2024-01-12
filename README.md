@@ -25,7 +25,7 @@ $ sudo apt install tree
 $ sudo apt install python3.8
 ```
 
-혹은 [sourceforce 사이트](https://sourceforge.net/projects/greatyocto/files/)에서 installed ubuntu great toctoova 가상 파일을 다운로드해서 사용해도 된다. (계정: great / PW: great) VirtualBox 7.0.8 버전 이상, Extension Pack Manager에서 확장 팩을 설치하는 것을 권장한다. 권장 사양은 CPU 8 Core, RAM 8192MB 이다.
+혹은 [sourceforce 사이트](https://sourceforge.net/projects/greatyocto/files/)에서 installed ubuntu great yocto.ova 가상 파일을 다운로드해서 사용해도 된다. (계정: great / PW: great) VirtualBox 7.0.8 버전 이상, Extension Pack Manager에서 확장 팩을 설치하는 것을 권장한다. 권장 사양은 CPU 8 Core, RAM 8192MB 이다.
 
 # bitbake
 
@@ -206,8 +206,8 @@ poky_src/
 
 # 빌드 속도 개선하기
 
-* 이 부분은 필수가 아니므로 생략함
-  - PREMIRRORS(로컬 미러 저장소), sstate-cache(공유 상태 캐시)를 구성하여 소스를 미리 다운로드함으로써 fetch 시간을 단축하여 빌드 속도를 개선하는 것임
+* PREMIRRORS(로컬 미러 저장소), sstate-cache(공유 상태 캐시)를 구성하여 소스를 미리 다운로드함으로써 fetch 시간을 단축하여 빌드 속도를 개선하는 것임
+  - 이 부분은 필수가 아니므로 생략함
 
 # Poky를 이용하여 레이어, 레시피 생성하기
 
@@ -534,6 +534,39 @@ $ bitbake core-image-minimal -C rootfs
   - `$ runqemu core-image-minimal nographic`
   - root로 로그인한다.
   - `root&qemux86-64:~# hello`
+
+* 레시피 확장 파일 목록 보기
+  - bitbake-layers show-appends 명령어를 이용하여 모든 레시피 확장 목록을 확인할 수 있다.
+  - `$ bitbake-layers show-appends | grep "core-image-minimal"`
+  - 이렇게 하면 core-image-minimal 레시피의 레시피 확장 파일을 확인할 수 있다.
+
+* 다음 명령어는 여러 레이어에서 사용된 메타데이터들을 단일 계층 디렉토리로 만들어 준다.
+  - `$ bitbake-layers flatten result_recipes`  # result_recipes: 결과가 저장되는 디렉토리 이름
+  - 다음과 같이 여러 레이어 계층을 합쳐 평면화함
+  - 쉽게 말해 core-image-minimal.bb와 core-image-minimal.bbappend가 합쳐짐
+
+```
+result_recipes/
+|- classes
+|- conf
+|- files
+|- lib
+|- recipes-bsp
+|- recipes-connectivity
+|- recipes-core
+|- recipes-devtools
+|- recipes-extended
+|- recipes-gnome
+|- recipes-graphics
+|- recipes-hello
+|- recipes-kernel
+|- recipes-multimedia
+|- recipes-rt
+|- recipes-sato
+|- recipes-support
+|- site
+|- wic
+```
 
 ...
 
