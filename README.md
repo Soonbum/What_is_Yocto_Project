@@ -568,13 +568,26 @@ result_recipes/
 |- wic
 ```
 
-...
+# 초기화 관리자
 
-# 초기화 관리자 추가
+* 초기화 관리자: 리눅스 시스템의 부팅 후 가장 먼저 생성되고 다른 프로세스를 실행하는 init 데몬 (예시: System V Init, systemd 등)
+  - 앞에서는 hello 실행 파일을 만들어 루트 파일 시스템에 추가하고 타깃 시스템을 부팅시켜 콘솔 창에서 "hello"를 실행해 보았지만, 정식 방법은 아니다.
+  - Yocto의 경우 기본 초기화 관리자로 System V Init을 사용한다.
+  - 대부분의 현업 리눅스 시스템은 systemd를 사용하므로 이번 장에서는 systemd만을 다룰 것이다.
+  - systemd는 백그라운드에서 실행되는 데몬(프로세스)이며 부모 프로세스를 갖지 않고 PID 1을 갖는다.
+  - systemd는 System V Init와 달리 컴포넌트들을 유닛(unit)으로 다루며 최소한의 서비스들을 병렬로 실행한다.
+  - 유닛의 종류는 다음과 같다: .service, .socket, .device, .mount, .automount, .swap, .target, .path, .timer, .snapshot, .slice, .scope
+  - 이번 장에서는 .service 유닛에 대해서만 다룰 것이다. (/lib/systemd/system/에 있음)
+
+systemd의 구조
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/ca96d170-835a-4eae-a1e7-1da42dd584c3)
 
 ...
 
 # 로그 파일을 통한 디버깅
+
+* 빌드가 실패했을 때 bitbake가 생성하는 로그 파일을 통해 실패의 원인을 찾는 것이 가장 유용하고 쉬운 방법이다.
+  - 오픈임베디드 빌드 시스템에서 제공하는 로그 파일 생성 방법과 디버깅 스킬을 학습한다.
 
 ...
 
