@@ -43,7 +43,6 @@ $ sudo apt install python3.8
 * 실행하기: `$ export PATH=/home/user/bitbake_src/bitbake-1.46.0/bin:$PATH`
   - bitbake-1.46.0/bin 디렉토리를 $PATH에 추가할 것
   - `$ bitbake --version` 버전이 제대로 출력되면 성공한 것
-  
 
 ## 메타데이터
 
@@ -86,7 +85,6 @@ bitbake_test/
 파일 내용은 다음과 같습니다.
 
 bitbake.conf
-
 ```
 # 기본적인 환경 설정
 PN = "${bb.parse.vars-from_file(d.getVar('FILE', False),d)[0]or 'defaultpkgname'}"  # 레시피 파일의 이름
@@ -98,7 +96,6 @@ B     = "${TOPDIR}/${PN}"           # 레시피의 빌드 과정에서 함수를
 ```
 
 bblayers.conf
-
 ```
 # 빌드 수행을 위해 어떤 레이어들이 존재하는지 알려줌
 # 레이어: 연관된 메타데이터들을 포함하는 저장소(디렉토리)
@@ -108,7 +105,6 @@ BBLAYERS ?= " \
 ```
 
 layer.conf
-
 ```
 # 현재 레이어의 경로와 레이어 내에 있는 레시피 파일들(.bb, .bbappend)의 경로를 알려줌
 BBPATH .= ":${LAYERDIR}"
@@ -118,14 +114,12 @@ BBFILE_PATTERN_mylayer := "^${LAYERDIR}/"
 ```
 
 base.bbclass
-
 ```
 # bitbake가 실행되기 위해 반드시 bbclass 파일이 존재해야 함
 addtask do_build    # 태스크 추가
 ```
 
 hello.bb
-
 ```
 # 레시피 파일: 실제로 bitbake가 실행하는 주체
 # 레시피 파일 이름 규칙: "<package_name>_<package_version>_<package_revision>.bb", 예를 들면 "linux-yocto_5.4_r0.bb"
@@ -255,7 +249,6 @@ poky_src/
 ```
 
 layer.conf
-
 ```
 BBPATH                    =. "${LAYERDIR}:"
 BBFILES                   += "${LAYERDIR}/recipes*/*.bb"
@@ -266,7 +259,6 @@ LAYERSERIES_COMPAT_hello  = "${LAYERSERIES_COMPAT_core}"
 ```
 
 hello.bb
-
 ```
 SUMMARY = "간단한 hello 예제"          # 패키지에 대한 간단한 소개. 한 줄로 입력하며 최대 80자.
 DESCRIPTION = "Simple hello example"  # 패키지와 기능에 대한 자세한 설명으로 여러 줄 가능
@@ -281,7 +273,6 @@ addtask do_printhello after do_compile before do_install
 ```
 
 bblayers.conf
-
 ```
 # POLY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
 # changes incompatibly
@@ -296,6 +287,7 @@ BBLAYERS ?= " \
 ```
 
 ※ 로그 출력 함수는 다음과 같다.
+
 Log Level | 파이썬 함수 | 셸 함수
 --------- | ---------- | --------
 plain | bb.plain(message) | bbplain message
@@ -350,7 +342,6 @@ poky_src/
 ```
 
 hello.c
-
 ```
 #include <stdio.h>
 #include <unistd.h>
@@ -366,7 +357,6 @@ int main(){
 ```
 
 COPYING
-
 ```
 EXAMPLE LICENSE FILE
 Copyright (C) 2024, Soonbum Jeong
@@ -376,7 +366,6 @@ This is example license file.
 * 이제 hello.c 애플리케이션 실행을 위해 hello.bb 레시피 파일을 다시 작성한다.
 
 hello.bb
-
 ```
 DESCRIPTION = "Simple helloworld application example"
 LICENSE = "MIT"
@@ -417,7 +406,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/source:"
 FILES_${PN} += "${bindir}/hello"
 ```
 
-* 레시피 파일 빌드하기
+## 레시피 파일 빌드하기
 
 ```
 $ bitbake hello -c cleanall    # cleanall 태스크만 수행 (WORKDIR 변수가 가리키는 빌드 작업 디렉토리의 모든 결과물 삭제)
@@ -471,8 +460,79 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=de10de48642ab74318e893a61105afbb \
     LICENSE = "MIT"
     LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
     ```
-  - 라이선스를 가진 오픈 소스를 사용하는 방법
-  - 자체적으로 라이선스를 부여하는 방법
+  - 라이선스를 가진 오픈 소스를 사용하는 방법, 자체적으로 라이선스를 부여하는 방법
+    ```
+    LICENSE = "MIT"
+    LIC_FILES_CHKSUM = "file://COPYING;md5=80cade1587e04a9473701795d41a4f0c"
+    ```
+
+## 레시피 확장 파일
+
+* 위의 hello.bb 레시피 파일을 bitbake로 빌드하는 것까지 수행하였지만 빌드 결과로 나온 실행 파일을 실행할 수는 없다.
+  - 실행 파일을 호스트가 아닌 특정 타깃 시스템에서 실행되도록 만들었기 때문이다.
+  - 타깃에서 실행 파일이 실행되려면 생성된 실행 파일이 루트 파일 시스템에 포함되어야 한다.
+  - 실행 파일을 생성하는 레시피 이름을 IMAGE_INSTALL 변수에 추가해야 한다.
+  - IMAGE_INSTALL 변수는 루트 파일 시스템 이미지를 생성하는 레시피인 core-image-minimal.bb 파일 내에서만 사용해야 한다.
+  - 그러나 오픈임베디드 코어 디렉토리인 meta에 존재하는 core-image-minimal.bb 파일을 수정하는 것은 바람직하지 않다.
+  - 그래서 재정의(오버라이드)를 위해 레시피 확장 파일을 만들 것이다. (.bbappend 파일의 목적)
+  - 레시피 확장 파일은 기존 레시피 파일보다 우선순위가 높아야 한다. (숫자가 커질수록 우선순위가 높아짐)
+
+## 레시피 확장 파일을 통한 hello 실행 파일 추가
+
+* 기존 core-image-minimal.b 파일은 다음 경로에 존재한다.
+  - `poky/meta/recipes-core/images/core-image-minimal.bb`
+
+* hello 실행 파일을 루트 파일 시스템에 추가하는 방법은 이미지 생성 레시피 파일에서 `IMAGE_INSTALL += "hello"`와 같이 처리하면 된다.
+  - 다음과 같이 `recipes-core/images` 디렉토리 밑에 레시피 확장 파일 `core-image-minimal.bbappend`를 생성한다.
+
+```
+poky_src/
+|- poky
+    |- meta-hello
+        |- conf
+        |   |- layer.conf
+        |- recipes-core
+        |   |- images
+        |       |- core-image-minimal.bbappend
+        |- recipes-hello
+            |- hello.bb
+            |- source
+                |- COPYING
+                |- hello.c
+```
+
+copre-image-minimal.bbappend
+```
+IMAGE_INSTALL_append =" hello"
+```
+
+* 레시피 확장 파일을 인식할 수 있도록 `meta-hello/conf` 디렉토리 아래의 layer.conf 파일을 다음과 같이 수정한다.
+
+layer.conf
+```
+BBPATH =. "${LAYERDIR}:"
+BBFILES += "${LAYERDIR}/recipes*/*.bb \
+            ${LAYERDIR}/recipes*/*/*.bbappend"
+BBFILE_COLLECTIONS += "hello"
+BBFILE_PATTERN_hello = "^${LAYERDIR}/"
+BBFILE_PRIORITY_hello = "10"
+LAYERSERIES_COMPAT_hello = "${LAYERSERIES_COMPAT_core}"
+```
+
+* 이제 hello.bb 레시피를 재빌드하고 이미지 생성 레시피 파일인 core-image-minimal.bb에서 루트 파일 시스템을 새로 생성해 주는 태스크인 rootfs를 실행하도록 한다.
+
+```
+$ bitbake hello -c cleanall && bitbake hello
+$ bitbake core-image-minimal -C rootfs
+```
+
+* 실행 파일 hello가 루트 파일 시스템에 잘 들어갔는지 확인해본다.
+  - `poky_src/build/tmp/work/qemux86_64-poky-linux/core-image-minimal/1.0-r0/rootfs/usr/bin`
+
+* QEMU 에뮬레이터를 실행한 후 hello를 실행해본다.
+  - `$ runqemu core-image-minimal nographic`
+  - root로 로그인한다.
+  - `root&qemux86-64:~# hello`
 
 ...
 
