@@ -582,6 +582,65 @@ result_recipes/
 systemd의 구조
 ![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/ca96d170-835a-4eae-a1e7-1da42dd584c3)
 
+## .service 유닛 파일 내에서의 섹션 종류
+
+* Unit 섹션: 최초로 동작하는 섹션, 다른 unit 간의 관계를 설정함
+  - Description: unit에 대한 설명.
+  - Documentation: 서비스에 대한 문서가 있는 URI 또는 main 페이지 제공.
+  - After: 현재 unit보다 먼저 실행되어야 하는 unit들을 나열함.
+  - Before: 현재 unit보다 나중에 실행되어야 하는 unit들을 나열함.
+  - Requires: 현재 unit이 의존하는 모든 unit들을 나열함. (모두 현재 실행 중이어야 함)
+  - Wants: Requires와 동일한 기능. (실행 중이지 않아도 현재 unit이 실행될 수 있음)
+  - BindsTo: 여기에 나열된 unit들이 종료되면 현재 서비스도 같이 종료됨.
+* Service 섹션
+  - Type: 서비스가 어떤 형태로 동작되는지 설정함
+    1. simple: 기본 방식. 이 경우 ExecStart가 기술되어야 함. 해당 unit이 시작되면 systemd는 unit의 시작이 완료됐다고 판단함.
+    2. forking: 서비스가 자식 프로세스를 생성할 때 사용함. PIDFile 값에 PID 파일을 지정해야 함. (부모 프로세스를 추적하는데 필요함)
+    3. oneshot: 서비스가 시작되면 상태를 activating으로 바꾸고 끝날 때까지 기다린다. (단기간 프로세스에 사용함)
+    4. dbus: DBUS에 지정된 BusName이 준비될 때까지 대기하며, DBUS가 준비되면 서비스가 실행됨.
+    5. notify: 서비스가 startup이 끝날 때 systemd에 시그널을 보냄. 이 시그널을 받은 systemd는 다음 unit을 실행함.
+    6. idle: 모든 서비스가 실행된 이후에 실행됨.
+    7. ExecStart: 서비스를 시작하기 위한 전체 경로. 서비스 시작 전에 이 명령어를 실행해야 함.
+    8. ExecStartPre: 서비스가 시작되기 전에 실행할 명령.
+    9. ExecStartPost: 서비스가 시작되고 나서 실행할 명령.
+    10. Restart: 서비스가 종료됐을 때 자동으로 시작하게 함. (always, on-success, on-failure, on-abnormal, on-abort, on-watchdog 등)
+  - TimeoutStartSec: 서비스 시작시 대기하는 시간.
+* Install 섹션
+  - WantedBy: `# systemctl enable` 명령어로 유닛을 등록할 때 등록에 필요한 유닛을 지정함.
+  - Also: `# systemctl enable`, `# systemctl disable` 명령어로 unit을 등록/해제할 때 함께 enable, disable할 unit들을 지정함.
+  - Alias: 유닛의 별칭.
+
+## systemd를 통한 hello 애플리케이션 실행
+
+* 다음과 같은 파일이 있어야 한다.
+
+```
+poky_src/
+|- poky
+    |- meta-hello
+        |- conf
+        |   |- layer.conf
+        |- recipes-core
+        |   |- images
+        |       |- core-image-minimal.bbappend
+        |- recipes-hello
+            |- hello.bb
+            |- source
+                |- COPYING
+                |- hello.c
+                |- hello.service
+```
+
+hello.bb
+```
+내용
+```
+
+hello.service
+```
+내용
+```
+
 ...
 
 # 로그 파일을 통한 디버깅
