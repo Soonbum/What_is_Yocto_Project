@@ -571,7 +571,8 @@ result_recipes/
 # 초기화 관리자
 
 * 초기화 관리자: 리눅스 시스템의 부팅 후 가장 먼저 생성되고 다른 프로세스를 실행하는 init 데몬 (예시: System V Init, systemd 등)
-  - 앞에서는 hello 실행 파일을 만들어 루트 파일 시스템에 추가하고 타깃 시스템을 부팅시켜 콘솔 창에서 "hello"를 실행해 보았지만, 정식 방법은 아니다.
+  - 앞에서는 hello 실행 파일을 만들어 루트 파일 시스템에 추가하고 타깃 시스템을 부팅시켜 콘솔 창에서 "hello"를 실행해 보았다.
+  - 초기화 관리자를 이용하면 자동으로 프로세스를 실행할 수 있다.
   - Yocto의 경우 기본 초기화 관리자로 System V Init을 사용한다.
   - 대부분의 현업 리눅스 시스템은 systemd를 사용하므로 이번 장에서는 systemd만을 다룰 것이다.
   - systemd는 백그라운드에서 실행되는 데몬(프로세스)이며 부모 프로세스를 갖지 않고 PID 1을 갖는다.
@@ -633,12 +634,43 @@ poky_src/
 
 hello.bb
 ```
-내용
+DESCRIPTION = "Simple helloworld application example"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://COPYING;md5=80cade1587e04a9473701795d41a4f0c"
+
+SRC_URI = "file://hello.c"
+SRC_URI_append = " file://COPYING"
+SRC_URI_append = " file://hello.service"
+inherit system
+S = "${WORKDIR}"
+SYSTEMD_SERVICE_${PN} = "hello.service"
+SYSTEMD_AUTO_ENABLE = "enable"
+
+do_compile(){
+    ${CC} hello.c ${LDFLAGS} -o hello
+}
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 hello ${D}${bindir}
+    install -d ${D}${systemd_unitdir}/system
+    install -m 0644 hello.service ${D}${systemd_unitdir}/system
+}
+FILESEXTRAPATHS_prepend := "${THISDIR}/source:"
+FILES_${PN} += "${bindir}/hello"
+FILES_${PN} += "${systemd_unitdir}/system/hello.service"
 ```
 
 hello.service
 ```
-내용
+[Unit]
+Description=Hello World startup script
+
+[Service]
+ExecStart=/usr/bin/hello
+
+[Install]
+WantedBy=multi-user.target
 ```
 
 ...
