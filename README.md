@@ -673,7 +673,7 @@ ExecStart=/usr/bin/hello
 WantedBy=multi-user.target
 ```
 
-...
+... 190 페이지부터
 
 # 로그 파일을 통한 디버깅
 
