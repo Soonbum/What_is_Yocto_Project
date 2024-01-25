@@ -36,7 +36,7 @@ $ sudo apt install python3.8
 ## bitbake 설치 및 실행
 
 * 소스 받기
-  - 최신 버전: `$ git clone git://git.yoctoproject.org/poky` 그 후에 버전을 선택하면 된다. `$ git checkout jethro` ([버전 참고](https://ko.wikipedia.org/wiki/%EC%9A%95%ED%86%A0_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8))
+  - 최신 버전: `$ git clone git://git.yoctoproject.org/poky` 그 후에 버전을 선택하면 된다. `$ git checkout kirkstone` ([버전 참고](https://en.wikipedia.org/wiki/Yocto_Project))
   - dunfell 버전: `$ wget http://git.openembedded.org/bitbake/snapshot/bitbake-1.46.0.tar.gz`
 
 * 압축 풀기: `$ tar -xzf bitbake-1.46.0.tar.gz`
