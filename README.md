@@ -203,6 +203,13 @@ poky_src/
   - 레시피 파일에서 사용하는 모든 환경 변수를 확인하는 방법: `$ bitbake core-image-minimal -e > env.txt` (메타데이터 분석 절차를 수행한 결과로 얻어진 변수, 함수를 env.txt로 저장)
   - `$ bitbake-getvar -r core-image-minimal DL_DIR`: 위와 비슷함, 이렇게 하면 DL_DIR 변수의 할당 과정을 상세하게 볼 수 있음
 
+* 커스텀 리눅스 예시
+  - core-image-minimal: 타깃 머신이 부팅이 되도록 지원하며, 커널과 부트로더 테스트 및 개발에 유용한 작은 이미지
+  - core-image-full-cmdline: 콘솔만 가능한 이미지로 리눅스 시스템의 기능 대부분을 제공함
+  - core-image-weston: Wayland 프로토콜 라이브러리와 레퍼런스 Weston 컴포지터를 제공하는 이미지
+  - core-image-x11: 터미널을 지원하는 기본적인 x11 이미지
+  - core-image-sato: sato를 지원하고 모바일 디바이스를 위한 모바일 환경을 지원하는 X11 이미지. 터미널, 편집기, 파일 매니저, 미디어 플레이어와 같은 애플리케이션을 지원함
+
 * oe-init-build-env 스크립트
   - 기본 빌드 환경을 설정한다.
   - 이 스크립트를 실행하면 다음과 같은 conf 파일이 생성된다.
@@ -222,6 +229,13 @@ poky_src/
   - `$ cd poky/scripts`
   - `$ runqemu core-image-minimal nographic`
   - 종료 시에는 `# poweroff`를 실행한다.
+ 
+* QEMU(Quick EMUlator)란 무엇인가?
+  - QEMU에 기반하는 머신은 실제 타깃 머신 없이 개발 및 테스트가 가능하다. (현재 ARM, MIPS, MIPS64, PowerPC, x86, x86-64 에뮬레이터를 지원함)
+  - `$ runqemu <machine> <zimage> <filesystems>`
+  - machine: qemuarm, qemumips, qemuppc, qemux86, qemux86-64 등 머신 타입을 지정할 수 있다.
+  - zimage: 커널의 경로
+  - filesystems: ext3 이미지나 NFS 폴더 경로
 
 # 빌드 속도 개선하기
 
