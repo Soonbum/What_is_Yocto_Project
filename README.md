@@ -224,10 +224,10 @@ poky_src/
 ```
 
 * 빌드 결과를 QEMU 에뮬레이터로 실행
-  - 먼저 QEMU를 빌드한다: `$ bitbake runqemu`
+  - 먼저 QEMU를 빌드한다: `~/poky_src/build$ bitbake runqemu`
   - 실행하는 방법은 다음과 같다. (비디오 콘솔을 따로 생성하지 않고 위에서 생성한 커스텀 리눅스 이미지를 동작시킴)
-  - `$ cd poky/scripts`
-  - `$ runqemu core-image-minimal nographic`
+  - `~/poky_src$ cd poky/scripts`
+  - `~/poky_src/poky/scripts$ runqemu core-image-minimal nographic`
   - 종료 시에는 `# poweroff`를 실행한다.
  
 * QEMU(Quick EMUlator)란 무엇인가?
@@ -257,8 +257,8 @@ poky_src/
 ## 나만의 소스 저장소 PREMIRRORS 구성하기
 
 * 먼저 소스를 다운로드해야 한다.
-  - `bitbake core-image-minimal`: bitbake <레시피 이름>을 입력하면 소스를 다운로드하고 빌드도 같이 진행한다.
-  - `bitbake core-image-minimal --runall=fetch`: 옵션 --runall=fetch를 붙이면 소스만 다운로드하고 빌드는 하지 않는다. (do_fetch 태스크까지만 수행한다는 뜻)
+  - `~/poky_src_build$ bitbake core-image-minimal`: bitbake <레시피 이름>을 입력하면 소스를 다운로드하고 빌드도 같이 진행한다.
+  - `~/poky_src_build$ bitbake core-image-minimal --runall=fetch`: 옵션 --runall=fetch를 붙이면 소스만 다운로드하고 빌드는 하지 않는다. (do_fetch 태스크까지만 수행한다는 뜻)
 * 용량을 줄이기 위해 tarball을 생성한다.
   - poky_src/build/conf/local.conf 파일을 열어 `BB_GENERATE_MIRROR_TARBALLS = "1"`로 설정한다.
   - 위에서 이미 소스를 받았으므로 다시 받으려면 다음과 같이 해야 한다.
