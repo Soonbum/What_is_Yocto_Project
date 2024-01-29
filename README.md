@@ -224,7 +224,7 @@ poky_src/
 ```
 
 * 빌드 결과를 QEMU 에뮬레이터로 실행
-  - 이것을 사용하려면 `$ source poky/oe-init-build-env`를 실행한 다음에 `bitbake runqemu`를 실행해야 한다.
+  - 먼저 QEMU를 빌드한다: `$ bitbake runqemu`
   - 실행하는 방법은 다음과 같다. (비디오 콘솔을 따로 생성하지 않고 위에서 생성한 커스텀 리눅스 이미지를 동작시킴)
   - `$ cd poky/scripts`
   - `$ runqemu core-image-minimal nographic`
