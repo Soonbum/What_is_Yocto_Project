@@ -252,11 +252,36 @@ poky_src/
   - tar.gz, tar.xz와 같은 압축 파일들과 확장자 .done으로 끝나는 파일들이 존재한다. (done은 소스를 전부 다운로드했다는 표시로 생성되는 파일이다)
   - .done 파일이 확인되면 레시피에서 지정한 S 변수가 가리키는 위치에 받은 소스가 복사된다.
   - (S 변수는 압축 해제, 패치, 컴파일이 진행되는 디렉토리이다)
-* 소스 다운로드를 성공했다면 S 변수가 가리키는 디렉토리로 소스를 복사하고, 깃을 통해 소스를 받았다면 체크아웃(특정 브랜치, 태그, 해시,커밋 등으로 이동)이 발생한다.
+* 소스 다운로드를 성공했다면 S 변수가 가리키는 디렉토리로 소스를 복사하고, 깃을 통해 소스를 받았다면 체크아웃(특정 브랜치, 태그, 해시, 커밋 등으로 이동)이 발생한다.
 
 ## 나만의 소스 저장소 PREMIRRORS 구성하기
 
-...
+* 먼저 소스를 다운로드해야 한다.
+  - `bitbake core-image-minimal`: bitbake <레시피 이름>을 입력하면 소스를 다운로드하고 빌드도 같이 진행한다.
+  - `bitbake core-image-minimal --runall=fetch`: 옵션 --runall=fetch를 붙이면 소스만 다운로드하고 빌드는 하지 않는다. (do_fetch 태스크까지만 수행한다는 뜻)
+* 용량을 줄이기 위해 tarball을 생성한다.
+  - poky_src/build/conf/local.conf 파일을 열어 `BB_GENERATE_MIRROR_TARBALLS = "1"`로 설정한다.
+  - 위에서 이미 소스를 받았으므로 다시 받으려면 다음과 같이 해야 한다.
+  - `~/poky_src/build$ rm -rf downloads`
+  - `~/poky_src/build$ core-image-minimal --runall=fetch -f`  # 강제로 fetch 진행
+  - 깃으로부터 받은 소스는 'downloads/git2'에 저장되지 않고 downloads 디렉토리에 '.tar.gz'로 압축되어 저장된다.
+* 자체 소스 미러 구축을 위해 다음과 같이 따라한다.
+  - 간혹 "xxx_bad-checksum.."과 같은 파일이 남아 있다면 다시 fetch  명령어를 시도하면 대부분 해결된다. 모두 다운로드 후에 checksum 파일도 삭제한다.
+  - build/downloads 디렉토리에서 '.done' 파일을 모두 삭제한다. (`$ rm -rf *.done`)
+  - downloads 디렉토리 내에서 git2 디렉토리를 삭제한다. (`$ rm -rf git2`)
+* poky/src/source-mirrors 디렉토리를 생성한다. (자체 저장소인 PREMIRRORS 용도로 사용함)
+  - downloads 디렉토리에 받은 소스들을 source-mirrors 디렉토리로 복사한다. (`~/poky_src/source-mirrors$ cp -r ../build/downloads/* .`)
+  - poky_src/build/conf/local.conf 파일 하단에 다음 내용을 추가한다.
+    ```
+    ...
+    # Specify own PREMIRRORS location
+    INHERIT += "own-mirrors"  # poky/meta/classes/own-mirrors.bbclass에 있음
+    SOURCE_MIRROR_URL = "file://${COREBASE}/../source-mirrors"  # own-mirrors.bbclass 클래스 파일에서 선언된 변수, COREBASE 변수는 meta 디렉토리의 부모 디렉토리를 가리킴
+    ```
+* 이제 자체 소스 미러인 PREMIRRORS가 준비되었으며 정상적으로 작동하는지 확인해 본다.
+  - `~/poky_src/build$ rm -rf downloads`
+  - `~/poky_src/build$ bitbake core-image-minimal -f --runall=fetch`
+  - 로컬에 있는 PREMIRRORS를 사용하여 소스를 다운로드하므로 매우 빠르게 소스 fetch가 끝날 것이다.
 
 ## 나만의 공유 상태 캐시(Shared State Cache) 생성하기
 
