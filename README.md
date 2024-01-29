@@ -212,7 +212,7 @@ poky_src/
 
 * oe-init-build-env 스크립트
   - 기본 빌드 환경을 설정한다.
-  - 이 스크립트를 실행하면 다음과 같은 conf 파일이 생성된다.
+  - `~/poky_src$ source poky/oe-init-build-env`를 실행하면 다음과 같은 conf 파일이 생성된다.
 
 ```
 poky_src/
