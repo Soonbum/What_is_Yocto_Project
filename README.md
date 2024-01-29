@@ -243,6 +243,7 @@ poky_src/
   - 소스를 fetch, 즉 다운로드하는 데 시간을 가장 많이 소요한다. (빌드 속도는 로컬 머신의 성능에 달려 있음)
   - Yocto에서 자주 빌드할 경우 미리 소스를 받아두는 편이 시간을 단축하는 데 도움이 많이 된다.
   - 또 경우에 따라서는 원격 저장소에 문제가 생겨서 소스를 받지 못하는 경우도 있기 때문에 미리 받아두는 편이 도움이 될 수 있다.
+  - 로컬 미러 저장소는 단순하게 git 소스를 저장해 두는 방식이고, 공유 상태 캐시는 빌드 단계 스냅샷을 저장해 두는 방식이다. (전자를 권장함)
 
 ## 소스 다운로드 절차
 
@@ -285,7 +286,47 @@ poky_src/
 
 ## 나만의 공유 상태 캐시(Shared State Cache) 생성하기
 
-...
+### 시그니처란 무엇인가?
+
+* 레시피의 각 태스크 수행시 시그니처 값이 생성된다.
+  - signaure 값: 태스크 코드, 변수 등 입력 데타데이터로부터 생성됨 (checksum 값이라고도 함)
+  - 빌드의 결과를 오브젝트 형태인 공유 상태 캐시를 만들어 특정 디렉토리에 저장함
+  - 이미 수행된 작업을 다시 수행하려고 할 때 저장된 시그니처 값과 새로운 시그니처 값을 계산하고 동일할 경우 건너뛴다. (재작업 스킵)
+  - 시그니처 값이 동일해 공유 상태 캐시에서 수행된 태스크의 결과를 그대로 가져오는 태스크를 setscene 태스크라고 함
+
+* setscene 태스크 종류
+
+태스크 / setscene 태스크 | 설명
+------------------------ | ---
+do_packagedata_setscene | 최종 패키지 생성을 위해 빌드 시스템에 의해 사용되는 패키지 메타데이터를 생성함
+do_package_setscene | do_install 태스크에 의해 생성된 파일들을 이용할 수 있는 패키지들과 파일들에 근거해 나눈다.
+do_package_write_rpm_setscene | RPM 패키지를 생성하고 패키지 피드에 패키지들을 배치시킴
+do_populate_lic_setscene | 이미지가 생성될 때 모아 놓은 레시피를 위한 라이선스 정보를 생성한다.
+do_populate_sysroot_setscene | 다른 레시피들에 의해 이용될 수 있도록 do_install 태스크에 의해 설치된 파일들을 sysroot로 복사함
+do_package_qa_setscene | 패키지로 만들어진 파일들에 대해 QA 검증이 실시됨
+
+* 소스 다운로드 및 빌드를 한 후에 sstate-cache 디렉토리를 확인할 수 있습니다. (`~/poky_src/build/sstate-cache`)
+  - 이 디렉토리의 경로를 지정하는 변수는 SSTATE_DIR이다. (~/poky_src/poky/meta/conf/btbake.conf 에 정의되어 있음)
+  - SSTATE_DIR: 레시피의 각 태스크 수행 시마다 시그니처와 빌드 결과에 대한 오브젝트가 만들어져서 이곳에 저장된다. (스냅샷 저장 개념)
+  - SSTATE_MIRRORS: 공유 상태 캐시의 저장소로 사용되는 디렉토리의 경로를 갖고 있다. (빌드시 이미 수행된 태스크인지 식별되기 위해 이 저장소를 제일 먼저 확인함)
+
+### 공유 상태 캐시(Shared State Cache) 생성하는 방법
+
+* 프로젝트 최상위 디렉토리에 sstate-cache를 만든다. (`~/poky_src$ mkdir sstate-cache`)
+* build 디렉토리에 있는 sstate-cache 디렉토리의 모든 파일들을 새로 만든 디렉토리로 복사한다. (`~/poky_src/sstate_cache$ cp -r ../build/sstate-cache/* .`)
+* ~/poky_src/build/conf/local.conf 파일 내용 하단에 다음 내용을 추가한다.
+  ```
+  ...
+  # make shared state cache mirror
+  SSTATE_MIRRORS = "file://.* file://${COREBASE}/../sstate-cache/PATH"
+  ```
+* 만약 외부 서버에 구축할 경우 다음과 같이 하면 된다. (dunfell 버전은 라인 끝에 '\n'을 넣어야 하고, kirkstone 버전은 '\n'을 넣어야 함)
+  ```
+  SSTATE_MIRRORS ?= "\
+  file://.* http://<server>/share/sstate/PATH;downloadfilename=PATH \n \
+  file://.* file://<local directory>/local/dir/sstate/PATH"
+  ```
+* 주의할 점은 프로젝트를 진행하며 계속 빌드하다보면 공유 상태 캐시의 크기가 커지기 때문에 중복되거나 필요 없는 것은 삭제해 주어야 한다.
 
 # Poky를 이용하여 레이어, 레시피 생성하기
 
@@ -294,16 +335,16 @@ poky_src/
 * Poky 소스 다운로드
 
 ```
-$ mkdir poky_src
-$ cd poky_src
-$ git clone git://git.yoctoproject.org/poky
-$ git checkout dunfell
+~$ mkdir poky_src
+~$ cd poky_src
+~/poky_src$ git clone git://git.yoctoproject.org/poky
+~/poky_src$ git checkout dunfell
 ```
 
 * Poky 소스 빌드하기
-  - poky_src 디렉토리에서 실행한다: `$ source poky/oe-init-build-env`
+  - poky_src 디렉토리에서 실행한다: `~/poky_src$ source poky/oe-init-build-env`
   - 실행 후에는 현재 작업 디렉토리 위치가 build 디렉토리로 변경된다.
-  - 빌드를 실행하여 Yocto에서 제공된 커스텀 리눅스 이미지를 만든다: `$ bitbake core-image-minimal -k`
+  - 빌드를 실행하여 Yocto에서 제공된 커스텀 리눅스 이미지를 만든다: `~/poky_src/build $ bitbake core-image-minimal -k`
 
 ## 예제 작성하기
 
