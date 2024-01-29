@@ -172,15 +172,15 @@ python do_build() {
   - dunfell 브랜치를 사용할 것이므로 dunfell 브랜치로 체크아웃한다.
 
 ```
-$ mkdir poky_src
-$ cd poky_src
-$ git clone git://git.yoctoproject.org/poky
-$ git checkout dunfell
+~$ mkdir poky_src
+~$ cd poky_src
+~/poky_src$ git clone git://git.yoctoproject.org/poky
+~/poky_src$ git checkout dunfell
 ```
 
 * 디렉토리 구조는 다음과 같다.
 
-`$ tree -d -L 2 poky_src/`
+`~$ tree -d -L 2 poky_src/`
 
 ```
 poky_src/
@@ -197,11 +197,11 @@ poky_src/
 ```
 
 * Poky 소스 빌드하기
-  - poky_src 디렉토리에서 실행한다: `$ source poky/oe-init-build-env`
+  - poky_src 디렉토리에서 실행한다: `~/poky_src$ source poky/oe-init-build-env`
   - 실행 후에는 현재 작업 디렉토리 위치가 build 디렉토리로 변경된다.
-  - 빌드를 실행하여 Yocto에서 제공된 커스텀 리눅스 이미지를 만든다: `$ bitbake core-image-minimal -k` (-k 옵션은 오류가 발생하더라도 끝까지 빌드를 계속 하라는 뜻) [여기서, 레시피 core-image-minimal은 다른 것이 될 수 있음]
-  - 레시피 파일에서 사용하는 모든 환경 변수를 확인하는 방법: `$ bitbake core-image-minimal -e > env.txt` (메타데이터 분석 절차를 수행한 결과로 얻어진 변수, 함수를 env.txt로 저장)
-  - `$ bitbake-getvar -r core-image-minimal DL_DIR`: 위와 비슷함, 이렇게 하면 DL_DIR 변수의 할당 과정을 상세하게 볼 수 있음
+  - 빌드를 실행하여 Yocto에서 제공된 커스텀 리눅스 이미지를 만든다: `~/poky_src/build$ bitbake core-image-minimal -k` (-k 옵션은 오류가 발생하더라도 끝까지 빌드를 계속 하라는 뜻) [여기서, 레시피 core-image-minimal은 다른 것이 될 수 있음]
+  - 레시피 파일에서 사용하는 모든 환경 변수를 확인하는 방법: `~/poky_src/build$ bitbake core-image-minimal -e > env.txt` (메타데이터 분석 절차를 수행한 결과로 얻어진 변수, 함수를 env.txt로 저장)
+  - `~/poky_src/build$ bitbake-getvar -r core-image-minimal DL_DIR`: 위와 비슷함, 이렇게 하면 DL_DIR 변수의 할당 과정을 상세하게 볼 수 있음
 
 * 커스텀 리눅스 예시
   - core-image-minimal: 타깃 머신이 부팅이 되도록 지원하며, 커널과 부트로더 테스트 및 개발에 유용한 작은 이미지
