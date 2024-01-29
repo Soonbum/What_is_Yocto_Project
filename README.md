@@ -605,7 +605,7 @@ poky_src/
                 |- hello.c
 ```
 
-copre-image-minimal.bbappend
+core-image-minimal.bbappend
 ```
 IMAGE_INSTALL_append =" hello"
 ```
@@ -744,11 +744,11 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=80cade1587e04a9473701795d41a4f0c"
 
 SRC_URI = "file://hello.c"
 SRC_URI_append = " file://COPYING"
-SRC_URI_append = " file://hello.service"
+SRC_URI_append = " file://hello.service"  # systemd가 실행할 서비스 파일을 추가함
 inherit system
 S = "${WORKDIR}"
-SYSTEMD_SERVICE_${PN} = "hello.service"
-SYSTEMD_AUTO_ENABLE = "enable"
+SYSTEMD_SERVICE_${PN} = "hello.service"  # .service 파일을 등록하는 데 필요함
+SYSTEMD_AUTO_ENABLE = "enable"           # 부팅시 systemd에 추가한 서비스 파일이 자동적으로 실행되도록 등록함
 
 do_compile(){
     ${CC} hello.c ${LDFLAGS} -o hello
@@ -757,8 +757,8 @@ do_compile(){
 do_install() {
     install -d ${D}${bindir}
     install -m 0755 hello ${D}${bindir}
-    install -d ${D}${systemd_unitdir}/system
-    install -m 0644 hello.service ${D}${systemd_unitdir}/system
+    install -d ${D}${systemd_unitdir}/system                       # .service 파일을 '/lib/systemd/system'에 위치시킴
+    install -m 0644 hello.service ${D}${systemd_unitdir}/system    # .service 파일을 '/lib/systemd/system'에 위치시킴
 }
 FILESEXTRAPATHS_prepend := "${THISDIR}/source:"
 FILES_${PN} += "${bindir}/hello"
@@ -777,7 +777,53 @@ ExecStart=/usr/bin/hello
 WantedBy=multi-user.target
 ```
 
-... 190 페이지부터
+* Yocto는 기본 초기화 관리자가 System V Init이기 때문에 systemd로 변경해야 한다.
+
+~/poky_src/build/conf/local.conf
+```
+...
+DISTRO_FEATURES_append = " systemd"
+DISTRO_FEATURES_remove = "sysvinit"
+VIRTUAL-RUNTIME_init_manager = "systemd"
+VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
+DISTRO_FEATURES_BACKFILL_CONSIDERED = "sysvinit"
+VIRTUAL-RUNTIME_initscript = "systemd-compat_units"
+```
+
+hello.c 수정 (sleep 함수를 주석처리함)
+```
+#include <stdio.h>
+#include <unistd.h>
+
+int main(){
+    int i = 0;
+    while (i < 10) {
+        printf ("Hello world!\n");
+//      sleep(5);
+        i++;
+    }
+    return 0;
+}
+```
+
+* 변경된 코드 실행
+
+```
+$ bitbake hello -C fetch
+$ bitbake core-image-minimal -C rootfs
+$ runqemu core-image-minimal nographic
+```
+
+* QEMU에서 로그인한 후에 다음과 같이 실행해본다.
+  - poky/meta/classes/systemd.bbclass 파일: do_install 태스크가 완료되면 98-hello.preset이라는 사전 설정 파일이 생성됨
+  - 이 파일은 systemd_postinist() 함수에서 실행되는 구조로 되어 있음
+  - 타깃이 처음 부팅될 때 hello.service를 자동으로 실행함
+
+```
+# journalctl -u hello -f &    # hello 서비스에서 출력되는 메시지를 실시간으로 출력하려면 백그라운드에서 동작하라는 명령어이다.
+# systemctl stop hello
+# systemctl start hello
+```
 
 # 로그 파일을 통한 디버깅
 
