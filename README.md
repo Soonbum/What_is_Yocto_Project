@@ -583,7 +583,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=de10de48642ab74318e893a61105afbb \
 
 ## 레시피 확장 파일을 통한 hello 실행 파일 추가
 
-* 기존 core-image-minimal.b 파일은 다음 경로에 존재한다.
+* 기존 core-image-minimal.bb 파일은 다음 경로에 존재한다.
   - `poky/meta/recipes-core/images/core-image-minimal.bb`
 
 * hello 실행 파일을 루트 파일 시스템에 추가하는 방법은 이미지 생성 레시피 파일에서 `IMAGE_INSTALL += "hello"`와 같이 처리하면 된다.
