@@ -344,7 +344,7 @@ do_package_qa_setscene | 패키지로 만들어진 파일들에 대해 QA 검증
 * Poky 소스 빌드하기
   - poky_src 디렉토리에서 실행한다: `~/poky_src$ source poky/oe-init-build-env`
   - 실행 후에는 현재 작업 디렉토리 위치가 build 디렉토리로 변경된다.
-  - 빌드를 실행하여 Yocto에서 제공된 커스텀 리눅스 이미지를 만든다: `~/poky_src/build $ bitbake core-image-minimal -k`
+  - 빌드를 실행하여 Yocto에서 제공된 커스텀 리눅스 이미지를 만든다: `~/poky_src/build$ bitbake core-image-minimal -k`
 
 ## 예제 작성하기
 
