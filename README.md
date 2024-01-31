@@ -915,6 +915,31 @@ $ runqemu core-image-minimal nographic
 * 로그 파일 확인하기
   - `poky_src/build/tmp/work/core2-64-poky-linux/nano/6.0-r0/temp/log.task_order' 파일을 확인한다.
   - nano editor의 소스 위치를 bitbake에게 알려주기만 했지만 bitbake는 최종 바이너리까지 생성했다.
+* 이미지를 생성하기 위해 .bbappend(레시피 확장 파일) 만들기
+  - ~/poky_src/poky/meta-nano-editor/recipes-core-images/core-image-minimal.bbappend 생성
+    ```
+    IMAGE_INSTALL += "nano"
+    ```
+  - ~/poky_src/poky/meta-nano-editor/conf/layer.conf 수정
+    ```
+    BBPATH =. "${LAYERDIR}:"
+    BBFILES += "${LAYERDIR}/recipes*/*.bb"
+    BBFILES += "${LAYERDIR}/recipes*/*/*.bbappend"  # 새로 추가됨
+    BBFILE_COLLECTIONS += "nano-editor"
+    BBFILE_PATTERN_nano-editor = "^${LAYERDIR}/"
+    BBFILE_PRIORITY_nano-editor = "10"
+    LAYERSERIES_COMPAT_nano-editor = "${LAYERSERIES_COMPAT_core}"
+    ```
+  - 이미지 생성 및 QEMU 실행
+    ```
+    $ bitbake nano -c cleanall && bitbake nano
+    $ bitbake core-image-minimal -C rootfs
+    $ runqemu core-image-minimal nographic
+    ```
+  - QEMU 부팅 후 다음 커맨드를 입력하면 nano editor가 실행됨
+    ```
+    # nano
+    ```
 
 ...
 
