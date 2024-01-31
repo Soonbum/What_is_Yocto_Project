@@ -941,6 +941,23 @@ $ runqemu core-image-minimal nographic
     # nano
     ```
 
+## 빌드 히스토리
+
+* 빌드 히스토리: 이미지의 변경점을 추적하고 변경된 이미지가 수행한 빌드 절차를 이전과 비교할 수 있는 기능
+  - ~/poky_src/build/conf/local.conf 파일에 다음 내용을 추가한다.
+    ```
+    ...
+    INHERIT += "buildhistory"    # buildhistory.bbclass 클래스를 상속함 (INHERIT은 .conf(환경 설정)에서 사용하고, inherit은 .bb(레시피)에서 사용함)
+    BUILDHISTORY_COMMIT = "1"    # git 리포지토리에 빌드 히스토리를 커밋하도록 함 (0은 마지막 빌드에 관련된 정보만 저장함)
+    BUILDHISTORY_COMMIT_AUTHOR = "Soonbum Jeong <peacemaker84@gmail.com>"
+    BUILDHISTORY_DIR = "${TOPDIR}/buildhistory"    # buildhistory.bbclass가 빌드 히스토리를 저장하는 디렉토리 경로
+    BUILDHISTORY_IMAGE_FILES = "/etc/passwd /etc/group"    # 특정 파일의 내용을 추적할 수 있도록 함 (여기서는 사용자 및 그룹 항목의 변경을 모니터링함)
+    ```
+
+...
+
+## rm_work.bbclass를 통한 빌드 임시 파일 제거하기
+
 ...
 
 ## externalsrc를 이용한 외부 소스로부터 소스 빌드
