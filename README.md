@@ -840,7 +840,89 @@ $ runqemu core-image-minimal nographic
   - 로그 파일은 log.do_<taskname>.<pid> 형식으로 되어 있다. (오류 분석을 위해 이것을 보면 됨)
   - 스크립트 파일은 run.do_<taskname> 형식으로 되어 있다. (로깅 데이터를 추가하여 디버깅 수행하는 데 도움이 됨)
 
-# 오픈임베디드 코어 클래스 기능을 사용한 빌드 최적화
+# 유용한 오픈임베디드 코어 클래스 기능을 사용한 빌드 최적화
+
+## Autotools를 이용한 nano editor 빌드
+
+* GNU Autotools: GNU 빌드 시스템으로 UNIX 기반 시스템에서 소스 코드를 빌드하는 데 도움을 주는 빌드 툴이다.
+  - autoconf: configure.ac 파싱 --> configure 스크립트 생성 및 실행 --> 최종 Makefile 생성
+  - automake: Makefile.am 파싱 --> Makefile.in 생성 --> configure 파일에서 Makefile 생성시 참고
+  - libtool: 라이브러리 생성 처리
+
+* 관련 소스 다운로드 방법
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b nano`
+  - git으로부터 nano editor tarball 파일 받는 방법: `~/tmp$ wget https://www.nano-editor.org/dist/v6/nano-6.0.tar.gz`
+
+### 실습 순서
+
+* 레시피 파일을 만들기 전에 라이선스 파일 checksum 값 계산
+  - `~/tmp$ md5sum nano-6.0.tar.gz`  # 다운로드 받은 tarball 파일의 md5sum 값을 구함
+* 다운로드 받은 파일의 압축 풀기
+  - `~/tmp$ tar -xvf nano-6.0.tar.gz`
+* COPYING, COPYING.DOC 파일의 라이선스 checksum 값 계산
+  - `~/tmp/nano-6.0$ md5sum COPYING`
+  - `~/tmp/nano-6.0$ md5sum COPYING.DOC`
+* 새로운 메타 레이어 생성 (여기서부터 해도 된다. checksum 값을 기입하지 않으면 bitbake가 오류 메시지에서 알려준다)
+  ```
+  poky_src/
+  |- build
+  |   |- conf
+  |       |- bblayers.conf
+  |- poky
+      |- meta-nano-editor
+          |- conf
+          |    |- layer.conf
+          |- recipes-nano
+               |- nano_6.0.bb
+  ```
+  * 파일 내용을 다음과 같이 작성한다.
+    - layer.conf
+      ```
+      BBPATH =. "${LAYERDIR}:"
+      BBFILES += "${LAYERDIR}/recipes*/*.bb"
+      BBFILE_COLLECTIONS += "nano-editor"
+      BBFILE_PATTERN_nano-editor = "^${LAYERDIR}/"
+      BBFILE_PRIORITY_nano-editor = "10"
+      LAYERSERIES_COMPAT_nano-editor = "${LAYERSERIES_COMPAT_core}"
+      ```
+    - nano_6.0.bb
+      ```
+      DESCRIPTION = "Nano editor example"
+      LICENSE = "GPLv3"
+      LIC_FILES_CHKSUM = "file://COPYING:;md5=f27defe1e96c2e1ecd4e0c9be8967949 \
+                          file://COPYING.DOC;md5=ad1419ecc56e060eccf8184a87c4285f"
+      SRC_URI = "https://www.nano-editor.org/dist/v6/nano-6.0.tar.gz"
+      SRC_URI[md5sum] = "191152bb1d26cefba675eb0e37592c4e"
+      DEPENDS = "ncurses"  # 의존성
+      inherit gettext pkgconfig autotools
+      ```
+    - bblayers.conf
+      ```
+      POKY_BBLAYERS_CONF_VERSION = "2"
+      BBPATH = "${TOPDIR}"
+      BBFILES ?= ""
+      BBLAYERS ?= " \
+          /home/user/poky_src/poky/meta \
+          /home/user/poky_src/poky/meta-poky \
+          /home/user/poky_src/poky/meta-yocto-bsp \
+          /home/user/poky_src/poky/meta-hello \
+          /home/user/poky_src/poky/meta-nano-editor \
+          "
+      ```
+* 빌드하기
+  - `~/poky_src/build$ bitbake nano`
+  - 빌드가 완료되면 다음 위치에 실행 파일이 생성됨 (`~/poky_src/build/tmp/work/core2-64-poky-linux/nano/6.0-r0/image/usr/bin`)
+* 로그 파일 확인하기
+  - `poky_src/build/tmp/work/core2-64-poky-linux/nano/6.0-r0/temp/log.task_order' 파일을 확인한다.
+  - nano editor의 소스 위치를 bitbake에게 알려주기만 했지만 bitbake는 최종 바이너리까지 생성했다.
+
+...
+
+## externalsrc를 이용한 외부 소스로부터 소스 빌드
+
+* 실수로 clean, fetch, patch 등의 태스크를 수행하면 다시 소스를 새롭게 받아오므로 수정한 소스가 사라지는 문제가 있다.
+  - 이런 문제를 피하기 위해 externalsrc.bbclass라는 클래스를 사용한다.
+  - 변경하고자 하는 소스를 로컬에 저장해 편집할 수 있도록 해준다.
 
 ...
 
