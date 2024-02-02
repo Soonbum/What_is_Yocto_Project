@@ -973,9 +973,9 @@ $ runqemu core-image-minimal nographic
 
 ## externalsrc를 이용한 외부 소스로부터 소스 빌드
 
-* 실수로 clean, fetch, patch 등의 태스크를 수행하면 다시 소스를 새롭게 받아오므로 수정한 소스가 사라지는 문제가 있다.
-  - 이런 문제를 피하기 위해 externalsrc.bbclass라는 클래스를 사용한다.
-  - 변경하고자 하는 소스를 로컬에 저장해 편집할 수 있도록 해준다.
+* 실수로 clean, fetch, unpack, patch 등의 태스크를 수행하면 다시 소스를 새롭게 받아오므로 수정한 소스가 사라지는 문제가 있다.
+  - 이런 문제를 피하기 위해 externalsrc.bbclass라는 클래스를 사용한다. (fetch, unpack, path 태스크 생략함)
+  - 변경하고자 하는 소스만 따로 로컬에 저장했다가 편집하고 즉시 빌드할 수 있도록 해준다.
 
 ...
 
