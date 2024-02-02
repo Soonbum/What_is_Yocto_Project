@@ -976,8 +976,45 @@ $ runqemu core-image-minimal nographic
 * 실수로 clean, fetch, unpack, patch 등의 태스크를 수행하면 다시 소스를 새롭게 받아오므로 수정한 소스가 사라지는 문제가 있다.
   - 이런 문제를 피하기 위해 externalsrc.bbclass라는 클래스를 사용한다. (fetch, unpack, path 태스크 생략함)
   - 변경하고자 하는 소스만 따로 로컬에 저장했다가 편집하고 즉시 빌드할 수 있도록 해준다.
+  - 이 방법은 내가 개발하는 나만의 소스를 로컬에서 따로 작업하고 있을 때 주로 사용한다.
 
-...
+* 참고로 소스 코드를 받는 방법에 따라 로컬에 위치는 장소가 다르다. (예: nano editor)
+  소스 받는 방법 | SRC_URI 표현식 | ${S} 값
+  -------------- | ------------- | ---------
+  git에서 다운로드 | SRC_URI = "git://GitHub.com/greatYocto/\bbexample.git;protocol=https;branch=master" | S = "${WORKDIR}/git"
+  tarball 다운로드 | SRC_URI = "https://www.nano-editor.org/\dist/v2.7/nano-${PV}.tar.xz" | S = "${WORKDIR}/${BPN}-${PV}"
+  로컬 파일 사용 | SRC_URI = "file://ldconfig-native-2.12.1.tar.gz2 | S = "${WORKDIR}
+
+* 외부 소스 빌드시 발생할 수 있는 문제점
+  - 소스 디렉토리가 bitbake 작업 디렉토리 아래 있으므로 레시피가 업데이트 되어서 do_fetch 태스크를 수행하거나 `$ bitbake nano -C fetch' 명령을 강제로 수행할 경우 기존 변경된 코드는 모두 삭제된다.
+  - 소스 코드가 바뀐 경우 do_unpack 태스크부터 다시 수행하므로, 수정된 코드를 보존하려면 빌드에 적용하려면 반드시 `$ bitbake -C compile`과 같이 명령을 입력해야 한다.
+  - 코드 수정 후 빌드를 수행하면 불필요한 태스크들이 추가 수행되므로 빌드 시간이 오래 걸린다.
+  - 의도적으로, 혹은 실수로 build 디렉토리가 삭제되면 변경된 코드가 사라지게 된다.
+
+* externalsrc.bbclass 클래스의 기능
+  - 빌드 대상인 소스를 build 디렉토리 아래의 작업 디렉토리인 WORKDIR에서 찾지 않고 내가 직접 지정한 로컬 디렉토리에서 찾는 방법을 제공한다. (외부 소스를 빌드 대상으로 삼을 수 있음)
+  - 소스 코드를 로컬에 저장했기 때문에 do_fetch, do_unpack, do_patch 태스크 수행이 생략된다.
+
+### 실습 순서
+
+* ~/poky_src/source/nano 디렉토리로 nano editor 소스 코드를 복사한다.
+  - `~/poky_src/source/nano$ cp -r ~poky_src/build/tmp/work/core2-64-poky-linux/nano/6.0-r0/nano-6.0/* .`
+  - 특정 레시피에서 사용된 소스 코드의 위치는 S 변수에 저장된다. (`$ bitbake-getvar -r nano S`)
+* 기존에 만든 레시피 확장 파일 nano_6.0.bbappend에 다음 내용을 추가한다. (rm_work 클래스는 꺼야 함)
+  ```
+  # inherit rm_work
+  inherit externalsrc
+  EXTERNALSRC = "${COREBASE}/../source/nano"
+  ```
+* 혹은 환경 설정 파일에서 externalsrc 클래스를 넣고 싶으면 local.conf 파일을 수정하면 된다.
+  ```
+  INHERIT += "externalsrc"
+  EXTERNALSRC_pn-nano = "${COREBASE}/../source/nano"
+  EXTERNALSRC_BUILD_pn-nano = "${COREBASE}/../source/nano"
+  ```
+* 재빌드를 수행한다. (`$ bitbake nano -c cleanall && bitbake nano`)
+  - 이렇게 하면 기존에 저장된 소스는 사라져 있다. (`poky_src/build/tmp/work/core2-64-poky-linux/nano/6.0-r0/nano-6.0/src`)
+  - 또 log.task_order 파일을 열어보면 fetch, unpack, patch 태스크 실행이 모두 생략되어 있는 것을 볼 수 있다. (`poky_src/build/tmp/work/core2-64-poky-linux/nano/6.0-r0/temp/log.task_order`)
 
 # 의존성
 
