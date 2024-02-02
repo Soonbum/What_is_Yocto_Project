@@ -953,6 +953,14 @@ $ runqemu core-image-minimal nographic
     BUILDHISTORY_DIR = "${TOPDIR}/buildhistory"    # buildhistory.bbclass가 빌드 히스토리를 저장하는 디렉토리 경로
     BUILDHISTORY_IMAGE_FILES = "/etc/passwd /etc/group"    # 특정 파일의 내용을 추적할 수 있도록 함 (여기서는 사용자 및 그룹 항목의 변경을 모니터링함)
     ```
+  - 이미지 생성 및 QEMU 실행
+    ```
+    $ bitbake nano -c cleanall && bitbake nano
+    $ bitbake core-image-minimal -C rootfs
+    $ runqemu core-image-minimal nographic
+    ```
+  - bitbake를 실행하면 `poky_src/build/buildhistory` 디렉토리가 생성된다. (각 디렉토리 내 텍스트 파일을 통해 빌드에 대한 정보를 확인할 수 있다.
+  - (자세한 내용은 [Yocto 레퍼런스 사이트](https://docs.yoctoproject.org/3.1.1/ref-manual/ref-manual.html#structure-build-buildhistory) 참조)
 
 ...
 
