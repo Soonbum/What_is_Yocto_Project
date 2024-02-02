@@ -960,13 +960,16 @@ $ runqemu core-image-minimal nographic
     $ runqemu core-image-minimal nographic
     ```
   - bitbake를 실행하면 `poky_src/build/buildhistory` 디렉토리가 생성된다. (각 디렉토리 내 텍스트 파일을 통해 빌드에 대한 정보를 확인할 수 있다.
-  - (자세한 내용은 [Yocto 레퍼런스 사이트](https://docs.yoctoproject.org/3.1.1/ref-manual/ref-manual.html#structure-build-buildhistory) 참조)
-
-...
+    (자세한 내용은 [Yocto 레퍼런스 사이트](https://docs.yoctoproject.org/3.1.1/ref-manual/ref-manual.html#structure-build-buildhistory) 참조)
 
 ## rm_work.bbclass를 통한 빌드 임시 파일 제거하기
 
-...
+* rm_work.bbclass: 오픈임베디드 빌드 시스템이 빌드 작업을 끝내고 작업한 파일들을 삭제하는 기능을 수행하는 태스크
+  - 빌드 과정에서 생성된 불필요한 파일들을 모두 저장할 필요가 없을 때 이 기능을 사용한다.
+  - 이 기능을 사용하려면 레시피(.bb) 또는 레시피 확장 파일(.bbappend)에서 `inherit rm_work`를 추가한다.
+  - 만약 모든 레시피들에서 rm_work 클래스를 상속 받으려면 local.conf 환경 설정 파일에 `INHERIT += "rm_work"`를 추가한다.
+  - `du -sh <디렉토리>` 명령어를 통해 rm_work 적용 전/후의 빌드 작업 디렉토리의 크기를 비교해 본다.
+    (효과는 어마어마하다! 수백, 수천배 차이... 대신 빌드를 여러 번 할 경우 속도 저하는 피할 수 없다.)
 
 ## externalsrc를 이용한 외부 소스로부터 소스 빌드
 
