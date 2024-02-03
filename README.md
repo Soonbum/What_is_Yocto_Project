@@ -47,7 +47,8 @@ $ sudo apt install tree
 $ sudo apt install python3.8
 ```
 
-실습용으로 Ubuntu와 위의 패키지가 모두 설치된 [sourceforce 사이트](https://sourceforge.net/projects/greatyocto/files/)에서 installed ubuntu great yocto.ova 가상 파일을 다운로드해서 사용해도 된다. (계정: great / PW: great) VirtualBox 7.0.8 버전 이상, Extension Pack Manager에서 확장 팩을 설치하는 것을 권장한다. 권장 사양은 CPU 8 Core, RAM 8192MB 이다.
+* 실습용으로 Ubuntu와 위의 패키지가 모두 설치된 [sourceforce 사이트](https://sourceforge.net/projects/greatyocto/files/)에서 installed ubuntu great yocto.ova 가상 파일을 다운로드해서 사용해도 된다. (계정: great / PW: great) VirtualBox 7.0.8 버전 이상, Extension Pack Manager에서 확장 팩을 설치하는 것을 권장한다. 권장 사양은 CPU 8 Core, RAM 8192MB 이다.
+  - VirtualBox 및 확장팩 다운로드 경로: [여기](https://www.virtualbox.org/wiki/Downloads)에서 VirtualBox x.x.x platform packages와 VirtualBox x.x.x Oracle VM VirtualBox Extension Pack을 받아서 설치하면 된다.
 
 # bitbake
 
