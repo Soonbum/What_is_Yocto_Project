@@ -197,6 +197,22 @@ poky_src/
     |- scripts
 ```
 
+* bitbake 실행파일 종류
+  - bitbake
+  - bitbake-diffsigs
+  - bitbake-dumpsig
+  - bitbake-getvar
+  - bitbake-hashclient
+  - bitbake-hashserv
+  - bitbake-layers
+  - bitbake-prserv
+  - bitbake-selftest
+  - bitbake-server
+  - bitbake-worker
+  - git-make-shallow
+  - toaster
+  - toaster-eventreplay
+
 * Poky 소스 빌드하기
   - poky_src 디렉토리에서 실행한다: `~/poky_src$ source poky/oe-init-build-env`
   - 실행 후에는 현재 작업 디렉토리 위치가 build 디렉토리로 변경된다.
@@ -237,6 +253,9 @@ poky_src/
   - machine: qemuarm, qemumips, qemuppc, qemux86, qemux86-64 등 머신 타입을 지정할 수 있다.
   - zimage: 커널의 경로
   - filesystems: ext3 이미지나 NFS 폴더 경로
+
+* 빌드 후 결과물 디렉토리는 다음과 같다.
+  - ...
 
 # 빌드 속도 개선하기
 
