@@ -207,13 +207,6 @@ poky_src/
   - 레시피 파일에서 사용하는 모든 환경 변수를 확인하는 방법: `~/poky_src/build$ bitbake core-image-minimal -e > env.txt` (메타데이터 분석 절차를 수행한 결과로 얻어진 변수, 함수를 env.txt로 저장)
   - `~/poky_src/build$ bitbake-getvar -r core-image-minimal DL_DIR`: 위와 비슷함, 이렇게 하면 DL_DIR 변수의 할당 과정을 상세하게 볼 수 있음
 
-* 커스텀 리눅스 예시
-  - core-image-minimal: 타깃 머신이 부팅이 되도록 지원하며, 커널과 부트로더 테스트 및 개발에 유용한 작은 이미지
-  - core-image-full-cmdline: 콘솔만 가능한 이미지로 리눅스 시스템의 기능 대부분을 제공함
-  - core-image-weston: Wayland 프로토콜 라이브러리와 레퍼런스 Weston 컴포지터를 제공하는 이미지
-  - core-image-x11: 터미널을 지원하는 기본적인 x11 이미지
-  - core-image-sato: sato를 지원하고 모바일 디바이스를 위한 모바일 환경을 지원하는 X11 이미지. 터미널, 편집기, 파일 매니저, 미디어 플레이어와 같은 애플리케이션을 지원함
-
 * oe-init-build-env 스크립트
   - 기본 빌드 환경을 설정한다.
   - `~/poky_src$ source poky/oe-init-build-env`를 실행하면 다음과 같은 conf 파일이 생성된다.
@@ -226,6 +219,13 @@ poky_src/
         |- local.conf           # 환경 설정 파일, bitbake.conf 파일에서 이 파일을 인클루드해 사용한다. (타깃 머신 지정, 크로스 툴체인 지정, 전역 변수 처리)
         |- templateconf.cfg     # 프로젝트를 생성하는 데 사용되는 템플릿 환경 설정을 포함하는 디렉토리를 포함하고 있음
 ```
+
+* 커스텀 리눅스 예시
+  - core-image-minimal: 타깃 머신이 부팅이 되도록 지원하며, 커널과 부트로더 테스트 및 개발에 유용한 작은 이미지
+  - core-image-full-cmdline: 콘솔만 가능한 이미지로 리눅스 시스템의 기능 대부분을 제공함
+  - core-image-weston: Wayland 프로토콜 라이브러리와 레퍼런스 Weston 컴포지터를 제공하는 이미지
+  - core-image-x11: 터미널을 지원하는 기본적인 x11 이미지
+  - core-image-sato: sato를 지원하고 모바일 디바이스를 위한 모바일 환경을 지원하는 X11 이미지. 터미널, 편집기, 파일 매니저, 미디어 플레이어와 같은 애플리케이션을 지원함
 
 * 빌드 결과를 QEMU 에뮬레이터로 실행
   - 먼저 QEMU를 빌드한다: `~/poky_src/build$ bitbake runqemu`
