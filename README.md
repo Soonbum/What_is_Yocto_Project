@@ -197,22 +197,17 @@ poky_src/
     |- scripts
 ```
 
-* bitbake 실행파일 종류
-  - bitbake
-  - bitbake-diffsigs
-  - bitbake-dumpsig
-  - bitbake-getvar
-  - bitbake-hashclient
-  - bitbake-hashserv
-  - bitbake-layers
-  - bitbake-prserv
-  - bitbake-selftest
-  - bitbake-server
-  - bitbake-worker
-  - git-make-shallow
-  - toaster
-  - toaster-eventreplay
-
+* bitbake/bin 실행파일 종류 (자세한 것은 --help 옵션으로 확인 가능함)
+  - `bitbake [options] [recipename/target recipe:do_task ...]` : 대상 레시피(.bb 파일)의 특정 태스크를 실행한다. (기본 값은 'build')
+  - `bitbake-diffsigs [-h] [-D] [-c color] [-d] [-t recipename taskname] [-s fromsig tosig] [sigdatafield1] [sigdatafile2]` : BitBake가 기록한 siginfo/sigdata 파일을 비교한다. (시그네처 파일 비교)
+  - `bitbake-dumpsig [-h] [-D] [-t recipename taskname] [sigdatafile]` : BitBake가 기록한 siginfo/sigdata 파일을 덤프한다.
+  - `bitbake-getvar [-h] [-r RECIPE] [-u] [-f FLAG] [--value] variable` : BitBake 변수에 대해 질의한다.
+  - `bitbake-layers [-d] [-q] [-F] [--color COLOR] [-h] <subcommand> ...` : BitBake 레이어 유틸리티. (bblayers.conf에 레이어 추가/삭제, 레이어 평탄화, 레이어 보기, 오버레이된 레이어 보기, 레시피/레시피 확장 보기, 레이어 생성 등)
+  - `bitbake-hashclient`
+  - `bitbake-hashserv`
+  - `bitbake-prserv`
+  - `bitbake-selftest`
+  
 * Poky 소스 빌드하기
   - poky_src 디렉토리에서 실행한다: `~/poky_src$ source poky/oe-init-build-env`
   - 실행 후에는 현재 작업 디렉토리 위치가 build 디렉토리로 변경된다.
