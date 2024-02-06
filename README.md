@@ -241,9 +241,6 @@ poky_src/
   - zimage: 커널의 경로
   - filesystems: ext3 이미지나 NFS 폴더 경로
 
-* 빌드 후 결과물 디렉토리는 다음과 같다.
-  - ...
-
 # 빌드 속도 개선하기
 
 * PREMIRRORS(로컬 미러 저장소), sstate-cache(공유 상태 캐시)를 구성하여 소스를 미리 다운로드함으로써 fetch 시간을 단축하여 빌드 속도를 개선하는 것임
