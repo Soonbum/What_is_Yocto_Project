@@ -620,7 +620,7 @@ $ bitbake core-image-minimal -C rootfs
   - `$ bitbake-layers show-appends | grep "core-image-minimal"`
   - 이렇게 하면 core-image-minimal 레시피의 레시피 확장 파일을 확인할 수 있다.
 
-* 다음 명령어는 여러 레이어에서 사용된 메타데이터들을 단일 계층 디렉토리로 만들어 준다.
+* __다음 명령어는 여러 레이어에서 사용된 메타데이터들을 단일 계층 디렉토리로 만들어 준다.__
   - `$ bitbake-layers flatten result_recipes`  # result_recipes: 결과가 저장되는 디렉토리 이름
   - 다음과 같이 여러 레이어 계층을 합쳐 평면화함
   - 쉽게 말해 core-image-minimal.bb와 core-image-minimal.bbappend가 합쳐짐
@@ -998,7 +998,43 @@ $ runqemu core-image-minimal nographic
   - 빌드 의존성: 빌드시에 필요한 라이브러리가 있을 경우 (DEPENDS)
   - 실행시간 의존성: 패키지가 동작하기 위해 미리 설치해야 하는 패키지가 있을 경우 (RDEPENDS)
 
-...
+* 예시) nano editor 레시피 파일에서의 의존성 표현
+  - `DEPENDS = "ncurses"
+  - 위는 bitbake 내부적으로 `do_prepare_recipe_sysroot[deptask] = "do_populate_sysroot"`를 의미한다.
+  - 이는 nano editor 레시피 파일의 do_prepare_recipe_sysroot 태스크가 ncurses 레시피의 do_populate_sysroot 태스크에 의존하고 있다는 뜻이다. (`meta/classes/staging.bbclass` 참조)
+  - ncurse의 do_populate_sysroot 태스크가 실행되면 결과물 recipe-sysroot, recipe-sysroot-native 디렉토리가 `tmp/work/<arch>/<recipe name>/` 아래에 생성된다. (nano editor의 경우 `build/tmp/work/core2-64-poky-linux/nano/6.0-r0/')
+
+ * sysroot 디렉토리: 헤더와 라이브러리를 찾기 위한 루트 디렉토리로 간주되는 디렉토리 (레시피당 하나씩 존재함)
+   - recipe-sysroot: 타깃 시스템에서 사용하는 헤더, 라이브러리가 포함되어 있다. (이 디렉토리의 위치는 STAGING_DIR_TARGET 변수에 할당되어 있다)
+   - recipe-sysroot-native: 크로스 컴파일에서 사용되는 컴파일러, 링커, 빌드 스크립트 등이 포함되어 있다. 호스트에서 사용하는 빌드 관련 도구가 여기에 배치된다. (이 디렉토리의 위치는 STAGING_DIR_NATIVE 변수에 할당되어 있다)
+   - 다음과 같이 의존하는 레시피들의 태스크가 다 완료되어야 메인 레시피 태스크를 구성, 빌드할 수 있다.
+
+    ```
+    <nano 레시피>                       <ncurses 레시피>
+    do_fetch                            do_fetch
+       |                                   |
+       v                                   v
+    do_unpack                           do_unpack
+       |                                   |
+       v                                   v
+    do_patch                            do_patch
+       |                                   |
+       v                                   v
+    do_prepare_recipe_sysroot           do_prepare_recipe_sysroot
+       |                                   |
+       v                                   v
+    do_configure                        do_configure
+       |                                   |
+       v                                   v
+    do_compile                          do_compile
+       |                                   |
+       v                                   v
+    do_install  <----------             do_install
+                          |                 |
+                          |                 v
+                          ------------  do_populate_sysroot
+    ```
+
 
 # 패키지 그룹 및 빌드 환경 구축 (빌드 스크립트 작성)
 
