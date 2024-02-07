@@ -7,15 +7,11 @@
   - bitbake: Yocto에서 제공하는 정보를 기반으로 빌드를 수행하는 빌드 도구
   - Poky: 빌드를 위해 필요한 소스 코드를 git에서 가져오거나, 빌드 환경 설정, 컴파일, 생성된 이미지를 설치하는 방법을 기술하는 .bb 파일이 들어 있음
 
-* 전체적인 맵은 다음과 같다. (왼쪽 column에서 오른쪽 column으로 흘러감, 행 구분은 무시할 것)
-  - 사용자는 조리법에 해당하는 것만 작성하면 된다.
-  - 밀키트 재료 역할을 하는 meta 안에는 HW, SW에 대한 모든 정보가 들어 있다. (링크만 있음, 실질적인 정보는 다운로드해야 함)
+* 전체적인 맵은 다음과 같다.
+  - 사용자는 조리법에 해당하는 것만 작성하면 된다. [conf (환경 설정 파일), bb (레시피 파일), bbclass (클래스 파일), bbappend (레시피 확장 파일), inc (인클루드 파일)]
+  - 재료 역할을 하는 meta 안에는 HW, SW에 대한 모든 정보가 들어 있다. (링크만 있음, 실질적인 정보는 다운로드해야 함)
   - bitbake가 알아서 조리법을 기반으로 결과물을 만들어준다.
-
-* 예시
-  사용자가 작성해야 하는 일종의 조리법 [ conf (환경 설정 파일), bb (레시피 파일), bbclass (클래스 파일), bbappend (레시피 확장 파일), inc (인클루드 파일) ] -->
-  Poky [ bitbake (요리사), meta (음식 재료) ] -->
-  결과물 [ root file system image, kernel image, boot loader image ]
+  - 결과물로 root file system image, kernel image, boot loader image가 나온다.
 
 * Yocto 프로젝트 작동 절차는 다음과 같다.
   1. Poky reference system 준비 (download, 환경 설정)
