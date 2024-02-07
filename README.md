@@ -13,10 +13,8 @@
   - bitbake가 알아서 조리법을 기반으로 결과물을 만들어준다.
 
 * 예시
-  사용자가 작성해야 하는 일종의 조리법 [ conf (환경 설정 파일), bb (레시피 파일), bbclass (클래스 파일), bbappend (레시피 확장 파일), inc (인클루드 파일) ]
-    ↓
-  Poky [ bitbake (요리사), meta (음식 재료) ]
-    ↓
+  사용자가 작성해야 하는 일종의 조리법 [ conf (환경 설정 파일), bb (레시피 파일), bbclass (클래스 파일), bbappend (레시피 확장 파일), inc (인클루드 파일) ] -->
+  Poky [ bitbake (요리사), meta (음식 재료) ] -->
   결과물 [ root file system image, kernel image, boot loader image ]
 
 * Yocto 프로젝트 작동 절차는 다음과 같다.
