@@ -1108,6 +1108,17 @@ $ runqemu core-image-minimal nographic
 
 # 패키지 그룹 및 빌드 환경 구축 (빌드 스크립트 작성)
 
+## IMAGE_INSTALL, IMAGE_FEATURES 변수
+
+* IMAGE_INSTALL 변수: 루트 파일 시스템에 설치할 패키지를 나열한 변수
+  - 예를 들어 `IMAGE_INSTALL += "hello nano"`를 하면 이미지에 hello, nano 패키지가 들어가게 됨
+* IMAGE_FEATURES 변수: 이미지에 추가되는 기능들을 레시피에서 추가할 때 사용함
+  - 루트 파일 시스템을 생성하는 대상 이미지 레시피에서 상속한 기반 이미지 클래스에 따라 할당할 수 있는 값들이 결정됨
+  - 이미지 클래스는 미리 정의된 기능 목록을 갖고 있으며, 기능 목록들 중에서 필요한 기능들을 할당함
+  - local.conf 환경 설정 파일에 추가할 때는 EXTRA_IMAGE_FEATURES 변수를 사용한다. (최종적으로 IMAGE_FEATURES에 추가됨)
+* 다음은 이미지 클래스에서 미리 정의된 기능 목록의 일부이다.
+  - ???
+
 ...
 
 # BSP 레이어 작성
