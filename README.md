@@ -1044,6 +1044,50 @@ $ runqemu core-image-minimal nographic
   - 위는 bitbake 내부적으로 `do_build[rdeptask] = "do_package_write_xxx"`를 의미한다. (xxx는 ipk, deb, tar, rpm이 될 수 있음)
   - 이는 do_build 태스크가 RDEPENDS_${PN} 변수에 할당된 패키지를 생성하는 레시피의 do_package_write_xxx 태스크에 의존성을 갖고 있다는 뜻이다. (`meta/classes/package_xxx.bbclass` 참조)
   - do_build 태스크는 각각의 패키지들을 생성하는 레시피들의 do_package_write_xxx 태스크가 완료되어야 실행될 수 있다.
+  - do_build 태스크는 모든 태스크들의 마지막에 위치하며 실제로는 실행되지 않고 태스크 체인 구성을 위해 존재하는 태스크에 불과하다.
+    ```
+    # poky/meta/classes/base.bbclass 내용
+    
+    ...
+    addtask build after do_populate_sysroot
+    do_build[noexec] = "1"
+    do_build () {
+        ...
+    }
+    ...
+    ```
+
+* RDEPENDS 변수는 패키징 단계에서 사용됨
+  - 패키징을 수행하는 레시피는 루트 파일 시스템 이미지를 생성하는 core-image-minimal.bb와 같은 레시피를 뜻한다.
+  - 소스 빌드를 위한 레시피와 달리 패키징 빌드를 위한 레시피는 do_rootfs, do_image, do_image_complete 등의 태스크를 갖고 있다.
+  - 이 태스크들의 주요 목적은 루트 파일 시스템을 생성하는 것이며 이 태스크 체인 끝에 do_build 태스크가 존재한다.
+
+* RRECOMMENDS 변수를 통한 의존성
+  - RDEPENDS 변수를 통한 의존성은 할당한 패키지가 존재하지 않으면 빌드 오류가 발생한다.
+  - RRECOMMENDS 변수를 통한 의존성은 해당 패키지가 존재하지 않아도 빌드 오류는 발생하지 않는다. (부드러운 실행시간 의존성)
+
+* 예시: kdb 패키지 (리눅스 콘솔을 다루기 위한 도구들을 포함)
+  - 과거에는 console-tools라는 패키지를 사용했으나 현재는 kdb 패키지가 대체 패키지가 되었다.
+  - console-tools 패키지와 실행시간 의존성을 가진 다른 패키지의 레시피 파일은 수정되지 않아야 한다.
+  - kdb 패키지가 이전 패키지인 console-tools와 호환되도록 바꾸기 위해 다음과 같이 레시피를 작성한다.
+  - poky/meta/recipes-core/kdb/kdb_2.2.0.bb
+    ```
+    RREPLACES_${PN} = "console-tools"    # 대체되기 전의 패키지 이름 (패키지가 대체됐음을 알려줌)
+    RPROVIDES_${PN} = "console-tools"    # 패키지 이름의 별칭 (호환되는 이전 패키지의 이름, 다른 레시피에서 console-tools라는 이름을 수정하지 않아도 됨)
+    RCONFLICTS_${PN} = "console-tools"   # 현재 패키지가 설치될 때 충돌하는 것으로 알려진 패키지 이름 (대체되기 전의 패키지 설치를 방지함)
+    ```
+
+## 의존성을 제공하는 레시피의 PROVIDES 변수
+
+* DEPENDS 변수에 제공할 이름을 PROVIDES 변수에 할당하면 된다. (2가지 방식으로 할당할 수 있음)
+  - 레시피 파일 이름으로부터 PROVIDES 변수 값 할당 받기: PROVIDES 변수는 레시피 파일에서 정의하지 않아도 기본적으로 PN 변수의 값을 갖게 된다. (`PROVIDES = "${PN}"`)
+    * 패키지 관련 변수 이름의 예시 (nano-6.0.bb 또는 nano_6.0_r0.bb)
+      - PN (package name): nano
+      - PV (package version): 6.0
+      - PR (package revision): r0
+  - 명시적으로 PROVIDES 변수 값 설정하기 (`PROVIDES =+ "nano_alias"`)
+    * bitbake-getvar 명령어를 통해 PROVIDES 변수를 확인하면 다음과 같다. (`PROVIDES="nano nano_alias"`)
+    * 이름이 충돌할 경우 이 방법을 사용하면 된다.
 
 ...
 
