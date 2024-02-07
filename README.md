@@ -12,13 +12,12 @@
   - 밀키트 재료 역할을 하는 meta 안에는 HW, SW에 대한 모든 정보가 들어 있다. (링크만 있음, 실질적인 정보는 다운로드해야 함)
   - bitbake가 알아서 조리법을 기반으로 결과물을 만들어준다.
 
-  사용자가 작성해야 하는 일종의 조리법 |    Poky       | 결과물
-  ------------------------------------- | ------------- | ------------------------
-  conf (환경 설정 파일)                 |    bitbake     | root file system image
-  bb (레시피 파일)                      |    (요리사)    | kernel image
-  bbclass (클래스 파일)                 |                | boot loader image
-  bbappend (레시피 확장 파일)           |      meta      |
-  inc (인클루드 파일)                   | (밀키트 재료)  |
+* 예시
+  사용자가 작성해야 하는 일종의 조리법 [ conf (환경 설정 파일), bb (레시피 파일), bbclass (클래스 파일), bbappend (레시피 확장 파일), inc (인클루드 파일) ]
+    ↓
+  Poky [ bitbake (요리사), meta (음식 재료) ]
+    ↓
+  결과물 [ root file system image, kernel image, boot loader image ]
 
 * Yocto 프로젝트 작동 절차는 다음과 같다.
   1. Poky reference system 준비 (download, 환경 설정)
