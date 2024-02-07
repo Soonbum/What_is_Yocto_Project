@@ -1020,21 +1020,22 @@ $ runqemu core-image-minimal nographic
     do_patch                            do_patch
        |                                   |
        v                                   v
-    do_prepare_recipe_sysroot           do_prepare_recipe_sysroot
-       |                                   |
-       v                                   v
-    do_configure                        do_configure
-       |                                   |
-       v                                   v
-    do_compile                          do_compile
-       |                                   |
-       v                                   v
-    do_install  <----------             do_install
-                          |                 |
-                          |                 v
-                          ------------  do_populate_sysroot
+    do_prepare_recipe_sysroot  <--      do_prepare_recipe_sysroot
+       |                         |         |
+       v                         |         v
+    do_configure                 |      do_configure
+       |                         |         |
+       v                         |         v
+    do_compile                   |      do_compile
+       |                         |         |
+       v                         |         v
+    do_install                   |      do_install
+                                 |          |
+                                 |          v
+                                 -----  do_populate_sysroot
     ```
 
+...
 
 # 패키지 그룹 및 빌드 환경 구축 (빌드 스크립트 작성)
 
