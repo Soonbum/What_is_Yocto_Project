@@ -998,8 +998,9 @@ $ runqemu core-image-minimal nographic
   - 빌드 의존성: 빌드시에 필요한 라이브러리가 있을 경우 (DEPENDS)
   - 실행시간 의존성: 패키지가 동작하기 위해 미리 설치해야 하는 패키지가 있을 경우 (RDEPENDS)
 
-* 예시) nano editor 레시피 파일에서의 의존성 표현
-  - `DEPENDS = "ncurses"
+## 레시피 파일에서의 빌드 의존성 표현
+  
+* `DEPENDS = "ncurses"` (예시: nano editor 레시피)
   - 위는 bitbake 내부적으로 `do_prepare_recipe_sysroot[deptask] = "do_populate_sysroot"`를 의미한다.
   - 이는 nano editor 레시피 파일의 do_prepare_recipe_sysroot 태스크가 ncurses 레시피의 do_populate_sysroot 태스크에 의존하고 있다는 뜻이다. (`meta/classes/staging.bbclass` 참조)
   - ncurse의 do_populate_sysroot 태스크가 실행되면 결과물 recipe-sysroot, recipe-sysroot-native 디렉토리가 `tmp/work/<arch>/<recipe name>/` 아래에 생성된다. (nano editor의 경우 `build/tmp/work/core2-64-poky-linux/nano/6.0-r0/')
@@ -1034,6 +1035,15 @@ $ runqemu core-image-minimal nographic
                                  |          v
                                  -----  do_populate_sysroot
     ```
+
+## 레시피 파일에서의 실행시간 의존성 표현
+
+* `RDEPENDS_${PN} = <package name>`
+  - 빌드 의존성과 다르게 이것은 레시피 이름이 아니라 패키지 이름을 할당해야 한다.
+  - 보통 'xxx_${PN}' 형식으로 되어 있는 변수는 패키징 단계에서 사용되는 이름을 뜻함 (레시피 빌드의 결과물)
+  - 위는 bitbake 내부적으로 `do_build[rdeptask] = "do_package_write_xxx"`를 의미한다. (xxx는 ipk, deb, tar, rpm이 될 수 있음)
+  - 이는 do_build 태스크가 RDEPENDS_${PN} 변수에 할당된 패키지를 생성하는 레시피의 do_package_write_xxx 태스크에 의존성을 갖고 있다는 뜻이다. (`meta/classes/package_xxx.bbclass` 참조)
+  - do_build 태스크는 각각의 패키지들을 생성하는 레시피들의 do_package_write_xxx 태스크가 완료되어야 실행될 수 있다.
 
 ...
 
