@@ -1089,7 +1089,22 @@ $ runqemu core-image-minimal nographic
     * bitbake-getvar 명령어를 통해 PROVIDES 변수를 확인하면 다음과 같다. (`PROVIDES="nano nano_alias"`)
     * 이름이 충돌할 경우 이 방법을 사용하면 된다.
 
-...
+* 다중 패키지, 다중 버전을 위한 virtual PROVIDER
+  - 예를 들어 현재 프로젝트에 적용된 커널이 Yocto에서 레퍼런스로 제공하는 커널인 linux-yocto.bb 레시피라고 하자.
+  - 리누스 토발즈가 배포한 바닐라 커널 5.19를 사용해야 한다고 하자. (torvalds-kernel_5.19.bb)
+  - 환경 설정 파일에서 다음과 같이 선호하는 패키지 이름을 지정할 수 있다.
+    * linux-yocto.bb: `PROVIDES =+ "virtual/kernel"`
+    * torvalds-kernel_5.19.bb: `PROVIDES =+ "virtual/kernel"`
+    * qemu.inc: `PREFERRED_PROVIDER_virtual/kernel = "torvalds-kernel"`
+  - 환경 설정 파일에서 다음과 같이 선호하는 패키지 버전을 지정할 수 있다.
+    * torvalds-kernel_4.14.bb
+    * torvalds-kernel_5.19.bb
+    * poky.conf: `PREFERRED_VERSION_torvalds-kernel = "5.19"`  # 선호하는 PV 값을 할당하면 됨 (할당하지 않으면 최신 버전이 빌드된다)
+    * 만약 `PREFERRED_VERSION_linux-yocto = "5.14%"`라고 하면 5.14 이후의 버전을 허용한다는 뜻이다.
+
+* __다음 명령어는 의존성을 갖고 있는 레시피 파일들을 출력해 준다.__
+  - `$ bitbake-layers show-cross-depends`
+  - 만약 `$ bitbake-layers show-cross-depends | grep nano`라고 하면 nano 레시피와 의존성이 있는 모든 것을 출력한다.
 
 # 패키지 그룹 및 빌드 환경 구축 (빌드 스크립트 작성)
 
