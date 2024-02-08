@@ -935,8 +935,7 @@ $ runqemu core-image-minimal nographic
     $ bitbake core-image-minimal -C rootfs
     $ runqemu core-image-minimal nographic
     ```
-  - bitbake를 실행하면 `poky_src/build/buildhistory` 디렉토리가 생성된다. (각 디렉토리 내 텍스트 파일을 통해 빌드에 대한 정보를 확인할 수 있다.
-    (자세한 내용은 [Yocto 레퍼런스 사이트](https://docs.yoctoproject.org/3.1.1/ref-manual/ref-manual.html#structure-build-buildhistory) 참조)
+  - bitbake를 실행하면 `poky_src/build/buildhistory` 디렉토리가 생성된다. (각 디렉토리 내 텍스트 파일을 통해 빌드에 대한 정보를 확인할 수 있다. (자세한 내용은 공식 문서 참조)
 
 ## rm_work.bbclass를 통한 빌드 임시 파일 제거하기
 
@@ -1110,14 +1109,38 @@ $ runqemu core-image-minimal nographic
 
 ## IMAGE_INSTALL, IMAGE_FEATURES 변수
 
-* IMAGE_INSTALL 변수: 루트 파일 시스템에 설치할 패키지를 나열한 변수
+* IMAGE_INSTALL 변수: 루트 파일 시스템에 설치할 **패키지 이름**을 나열한 변수
   - 예를 들어 `IMAGE_INSTALL += "hello nano"`를 하면 이미지에 hello, nano 패키지가 들어가게 됨
+
 * IMAGE_FEATURES 변수: 이미지에 추가되는 기능들을 레시피에서 추가할 때 사용함
   - 루트 파일 시스템을 생성하는 대상 이미지 레시피에서 상속한 기반 이미지 클래스에 따라 할당할 수 있는 값들이 결정됨
-  - 이미지 클래스는 미리 정의된 기능 목록을 갖고 있으며, 기능 목록들 중에서 필요한 기능들을 할당함
+  - 이미지 클래스는 **미리 정의된 기능 목록**을 갖고 있으며, 기능 목록들 중에서 필요한 기능들을 할당함
   - local.conf 환경 설정 파일에 추가할 때는 EXTRA_IMAGE_FEATURES 변수를 사용한다. (최종적으로 IMAGE_FEATURES에 추가됨)
-* 다음은 이미지 클래스에서 미리 정의된 기능 목록의 일부이다.
-  - ???
+
+## IMAGE_FEATURES
+
+* 다음은 image.bbclass 클래스에서 미리 정의된 기능 목록의 일부이다.
+  - debug-tweaks: 개발시에 주로 사용하는 기능으로 주된 특징은 비밀번호 없이 SSH 로그인이 가능하다.
+  - package-management: 루트 파일 시스템을 만들 경우 PACKAGE_CLASSES 변수에 설정된 패키지 관리 유형에 따른 패키지 관리 시스템을 설치한다.
+  - read-only-rootfs: 읽기 전용으로 루트 파일 시스템을 생성한다.
+  - splash: 부팅시에 스플래시 스크린이 동작하도록 한다. (재빌드 후 QEMU를 실행하면 부팅시 스플래시 이미지를 볼 수 있음)
+    ```
+    $ bitbake core-image-minimal -C rootfs
+    $ runqemu
+    ```
+  - 그 외 IMAGE_FEATURES 변수에서 제공하는 기능들이 있으니 공식 문서를 참고할 것
+
+* IMAGE_FEATURES 변수는 FEATURES_PACKAGES 변수와 함께 사용된다.
+  - `FEATURES_PACKAGE_feature1 = "package1 package2"`  # 기능 정의 (feature1 기능: package1, package2 포함)
+  - image.bbclass에서 splash를 정의하는 예시는 다음과 같다.
+    ```
+    ...
+    SPLASH ?= "psplash"    # psplash 패키지를 SPLASH 변수에 추가
+    FEATURE_PACKAGES_splash = "${SPLASH}"    # splash 기능 정의
+    ```
+  - 만약 local.conf 파일에서 EXTRA_IMAGE_FEATURES 변수에 'tools-sdk' 기능을 추가할 경우 이미지에 gcc 컴파일러 등이 설치된다. (타깃에서 vim으로 c 파일을 작성하기 컴파일도 할 수 있음)
+
+* 패키지 그룹
 
 ...
 
