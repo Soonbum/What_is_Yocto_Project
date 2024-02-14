@@ -1514,7 +1514,9 @@ templateconf.cfg
 
 * 이제 core-image-minimal에 대한 이미지를 생성하고 싶다면 다음을 실행하면 된다.
 
-`$ bitbake core-image-minimal`
+```
+$ bitbake core-image-minimal
+```
 
 # BSP 레이어 작성
 
