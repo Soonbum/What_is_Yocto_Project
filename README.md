@@ -1208,6 +1208,63 @@ RDEPENDS_${PN} = "\
               "
 ```
 
+* 새로 생성한 패키지 그룹 packagegroup-great를 이미지 생성 레시피인 core-image-minimal의 루트 파일 시스템에 추가한다.
+
+core-image-minimal.bbappend
+```
+IMAGE_INSTALL += "packagegroup-great"
+```
+
+* ~/poky_src/build/conf/bblayers.conf 파일에 새로 생성한 meta-great 레이어를 추가한다.
+
+bblayers.conf
+```
+POKY_BBLAYERS_CONF_VERSION = "2"
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+BBLAYERS ?= " \
+  /home/user/poky_src/poky/meta \
+  /home/user/poky_src/poky/meta-poky \
+  /home/user/poky_src/poky/meta-yocto-bsp \
+  /home/user/poky_src/poky/meta-hello \
+  /home/user/poky_src/poky/meta-nano-editor \
+  /home/user/poky_src/poky/meta-great \
+  "
+```
+
+* 기존의 meta-hello, meta-nano-editor를 패키지 그룹으로 묶어서 새로 생성된 meta-great 레이어 아래 루트 파일 시스템을 생성하는 레시피 확장 파일 core-image-minimal.bbappend에 추가할 것이다.
+  - 기존 레이어의 레시피 확장 파일에서 패키지 추가 내용을 삭제함
+
+~/poky_src/poky/meta-hello/recipes-core/images/core-image-minimal.bbappend
+```
+# IMAGE_INSTALL_append =" hello"    # 주석 처리
+```
+
+~/poky_src/poky/meta-nano-editor/recipes-core/images/core-image-minimal.bbappend
+```
+# IMAGE_INSTALL_append =" nano"    # 주석 처리
+```
+
+* 이미지 빌드를 통해 core-image-minimal.bb 레시피로 루트 파일 시스템을 생성하고 QEMU를 실행한다.
+
+```
+$ bitbake core-image-minimal
+$ runqemu core-image-minimal nographic
+```
+
+* 시스템 부팅, 로그인 후에 hello, nano 애플리케이션이 정상적으로 실행될 것이다.
+
+* 패키지 그룹에 어떤 패키지들이 설치되어 있는지 확인해 본다.
+  - '-g' 옵션은 지정한 레시피 파일에 대해 의존성을 가진 모든 패키지들을 pn-buildlist라는 파일로 출력함
+  - pn-buildlist 파일의 내용을 확인하면 어떤 패키지가 설치되어 있는지 확인할 수 있다.
+
+```
+$ bitbake -g great-image
+...
+NOTE: PN build list saved to 'pn-buildlist'
+NOTE: Task dependencies saved to 'task-depends.dot
+```
+
 ...
 
 # BSP 레이어 작성
