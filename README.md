@@ -1520,7 +1520,21 @@ $ bitbake core-image-minimal
 
 # BSP 레이어 작성
 
-...
+* 이번 장에서는 great라는 이름을 가진 가상의 타깃 시스템을 만들 예정이다.
+  - 바닐라 커널 version 5.4, u-boot
+  - 머신 이름: great
+  - 배포명: great-distro
+  - 이미지 지원 기능: splash, great 계정 및 group 계정 추가, password 지원, 기존에 작성했던 nano, hello 패키지 추가 등
+
+* great 시스템 전체 구조는 다음과 같다.
+
+레이어 구조 | 설명
+----------- | -----
+커스텀 레이어 (./meta-myproject) | 만들어야 할 레이어
+배포 레이어 (./meta-great) | 만들어야 할 레이어
+BSP 레이어 (./meta-great-bsp) | 만들어야 할 레이어
+포키 참조 배포 레이어 (./meta-poky) | 기본 제공 레이어
+oe-core (./meta) | 기본 제공 레이어
 
 # 커널 레시피
 
