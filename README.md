@@ -1505,7 +1505,16 @@ $ chmod 777 buildenv.sh
 $ source buildenv.sh
 ```
 
-...
+* build2/conf/templateconf.cfg 파일에는 현재 만들어진 환경 설정 파일을 어디서 복사했는지 기술되어 있다.
+
+templateconf.cfg
+```
+/home/user/poky_src/poky/meta-great/template
+```
+
+* 이제 core-image-minimal에 대한 이미지를 생성하고 싶다면 다음을 실행하면 된다.
+
+`$ bitbake core-image-minimal`
 
 # BSP 레이어 작성
 
