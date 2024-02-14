@@ -1166,9 +1166,46 @@ $ runqemu core-image-minimal nographic
   - 다만 여러 패키지들을 그룹핑해 의존성만을 부여한다.
   - 패키지 그룹의 레시피 파일 이름: packagegroup-<name>.bb (레시피 작업 디렉토리인 recipes-xxx 디렉토리 아래 packagegroups라는 디렉토리를 만들고 그 안에 넣으면 됨)
 
+### 실습 순서
+
 * 관련 소스 다운로드 방법
   - 기존 GitHub에서 받은 소스: `$ git checkout packagegroup`
   - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b packagegroup`
+
+* poky 디렉토리 아래에 meta-great 디렉토리를 생성한다. 이 디렉토리는 최종적으로 다음과 같은 구조를 가질 것이다.
+  ```
+  meta-great
+  |- conf
+  |   |- layer.conf
+  |- recipes-core
+      |- image
+      |   |- core-image-minimal.bbappend
+      |- packagegroups
+          |- packagegroup-great.bb
+  ```
+
+layer.conf
+```
+BBPATH =. "${LAYERDIR}:"
+BBFILES += "${LAYERDIR}/recipes*/*/*.bb"
+BBFILES += "${LAYERDIR}/recipes*/*/*.bbappend"
+BBFILE_COLLECTIONS += "great"
+BBFILE_PATTERN_great = "^${LAYERDIR}/"
+BBFILE_PRIORITY_great = "11"    # 기존 레이어들보다 큰 우선순위 할당
+LAYERSERIES_COMPAT_great = "${LAYERSERIES_COMPAT_core}"
+```
+
+packagegroup-great.bb
+```
+DESCRIPTION = "this package group is great's packages"
+inherit packagegroup
+
+PACKAGE_ARCH = "${MACHINE_ARCH}"
+RDEPENDS_${PN} = "\
+              hello \
+              nano \
+              "
+```
 
 ...
 
