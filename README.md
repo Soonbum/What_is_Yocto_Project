@@ -1200,7 +1200,8 @@ packagegroup-great.bb
 DESCRIPTION = "this package group is great's packages"
 inherit packagegroup
 
-PACKAGE_ARCH = "${MACHINE_ARCH}"
+PACKAGE_ARCH = "${MACHINE_ARCH}"    # 머신에 의존적인 패키지: 패키지가 빌드 대상인 특정 머신에 의존적인 경우
+#Inherit allarch                    # 아키텍처 의존적 패키지: 빌드 대상인 머신과는 관계없이 모든 아키텍처에 적용되는 패키지의 경우
 RDEPENDS_${PN} = "\
               hello \
               nano \
