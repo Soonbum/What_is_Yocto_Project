@@ -1536,6 +1536,43 @@ BSP 레이어 (./meta-great-bsp) | 만들어야 할 레이어
 포키 참조 배포 레이어 (./meta-poky) | 기본 제공 레이어
 oe-core (./meta) | 기본 제공 레이어
 
+## 커스텀 이미지 레시피 생성
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout custom_image`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b custom_image`
+
+* 커스텀 이미지 레시피를 포함하는 메타 레이어는 기존에 추가한 meta-great를 그대로 사용하고, 커스텀 이미지를 생성하는 이미지 레시피 파일로 great.bb를 만들 것이다.
+  - meta-great 레이어의 디렉토리 전체 구조는 다음과 같다.
+
+```
+~/poky_src/poky/meta-great
+|- classes
+|   |- great-base-image.bbclass
+|- conf
+|   |- layer.conf
+|- recipes-core
+|   |- images
+|   |   |- core-image-minimal.bbappend
+|   |   |- great-image.bb
+|   |- packagegroups
+|       |- packagegroup-great.bb
+|- template
+    |- bblayers.conf.sample
+    |- conf-notes.txt
+    |- local.conf.sample
+```
+
+...
+
+## BSP 레이어
+
+...
+
+## 커스텀 BSP 레이어 만들기
+
+...
+
 # 커널 레시피
 
 ...
