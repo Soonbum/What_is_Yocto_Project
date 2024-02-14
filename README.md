@@ -1166,7 +1166,7 @@ $ runqemu core-image-minimal nographic
   - 다만 여러 패키지들을 그룹핑해 의존성만을 부여한다.
   - 패키지 그룹의 레시피 파일 이름: packagegroup-<name>.bb (레시피 작업 디렉토리인 recipes-xxx 디렉토리 아래 packagegroups라는 디렉토리를 만들고 그 안에 넣으면 됨)
 
-### 실습 순서
+### 실습 순서 (패키지 생성)
 
 * 관련 소스 다운로드 방법
   - 기존 GitHub에서 받은 소스: `$ git checkout packagegroup`
@@ -1255,14 +1255,254 @@ $ runqemu core-image-minimal nographic
 * 시스템 부팅, 로그인 후에 hello, nano 애플리케이션이 정상적으로 실행될 것이다.
 
 * 패키지 그룹에 어떤 패키지들이 설치되어 있는지 확인해 본다.
+  - `$ bitbake -g great-image`
   - '-g' 옵션은 지정한 레시피 파일에 대해 의존성을 가진 모든 패키지들을 pn-buildlist라는 파일로 출력함
   - pn-buildlist 파일의 내용을 확인하면 어떤 패키지가 설치되어 있는지 확인할 수 있다.
 
+### 실습 순서 (대체 패키지 생성)
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout replace_package`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/local_conf.git -b replace_package`
+
+* 기존 hello 패키지 예제를 확장할 것이다.
+  - newhello 패키지: hello 대체 패키지 (기존의 코드를 수정하거나 삭제하지 않음)
+
+* 기존 recipes-hello 디렉토리를 그대로 복사하고 recipes-newhello 디렉토리 아래 붙여 넣는다. 기존의 hello.bb 파일은 newhello.bb로 바꾸고 hello.c 파일은 newhello.c로 바꾼다.
+  ```
+  meta-hello/recipes-newhello
+  |- newhello.bb
+  |- source
+      |- COPYING
+      |- hello.service
+      |- newhello.c
+  ```
+
+* newhello.bb 파일을 다음과 같이 수정한다.
+
+newhello.bb
 ```
-$ bitbake -g great-image
+DESCRIPTION = "Simple helloworld application example"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://COPYING;md5=80cade1587e04a9473701795d41a4f0c"
+
+SRC_URI = "file://newhello.c"    # 바뀐 부분
+SRC_URI += "file://COPYING"
+SRC_URI += "file://hello.service"
+
+inherit systemd
+
+S = "${WORKDIR}"
+SYSTEMD_SERVICE_${PN} = "hello.service"
+SYSTEMD_AUTO_ENABLE = "enable"
+
+do_compile(){
+    ${CC} newhello.c ${LDFLAGS} -o hello    # 바뀐 부분
+}
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 hello ${D}${bindir}
+
+    install -d ${D}${systemd_unitdir}/system
+    install -m 0644 hello.service ${D}${systemd_unitdir}/system
+}
+
+# 대체되는 기존 패키지를 사용하지 않도록 하고, 다른 패키지와의 호환성도 보장함
+RREPLACES_${PN} = "hello"    # 바뀐 부분
+RPROVIDES_${PN} = "hello"    # 바뀐 부분
+RCONFLICTS_${PN} = "hello"    # 바뀐 부분
+
+FILESEXTRAPATHS_prepend := "${THISDIR}/source:"
+FILES_${PN} += "${bindir}/hello"
+FILES_${PN} += "${systemd_unitdir}/system/hello.service"
+```
+
+* newhello.c 파일을 작성한다. (그 외 COPYING, hello.service 파일은 수정하지 않음)
+
+newhello.c
+```
+#include <stdio.h>
+#include <unistd.h>
+
+int main(){
+    int i = 0;
+    while (i < 10) {
+        printf ("New hello world!\n");
+        i++;
+    }
+    return 0;
+}
+```
+
+* 기존 hello 패키지가 중복으로 생성되지 않도록 BBMASK 변수를 사용해야 한다.
+  - BBMASK 변수는 bitbake가 특정 디렉토리 내에 있는 레시피 파일들(.bb, .bbappend)을 처리하지 못하게 함
+
+~/poky_src/build/conf/local.conf
+```
 ...
-NOTE: PN build list saved to 'pn-buildlist'
-NOTE: Task dependencies saved to 'task-depends.dot
+BBMASK = "meta-hello/recipes-hello/"
+```
+
+* 빌드 후 대체 패키지 실행 테스트
+  - QEMU 실행, 로그인 후 hello를 실행해 본다.
+
+```
+$ bitbake newhello
+$ bitbake core-image-minimal -C rootfs
+$ runqemu nographic
+```
+
+## 미리 정의된 패키지 그룹
+
+* 오픈임베디드 코어에는 이미지들에서 사용할 수 있도록 사전에 만들어진 공용 패키지 그룹이 존재한다.
+  - core-image-minimal 이미지의 경우 패키지 그룹 packagegroup-core-boot를 사용한다.
+  - 보통 이미지 생성을 위한 레시피 파일을 만들 때 packagegroup-core-boot.bb 패키지 그룹 레시피 파일을 넣는다. (부팅이 가능한 이미지를 얻을 수 있으므로)
+  - 패키지를 제공하거나 설치하지 않는다.
+  - 다만 실행 시간 의존성(RDEPENDS)만을 줘 각각의 패키지가 루트 파일 시스템이 만들어질 때 이미지에 함께 설치되도록 한다.
+  - 정의된 패키지 그룹에서 제공하는 기능은 IMAGE_FEATURES 변수를 사용해서도 제공할 수 있다.
+
+* 자주 사용하는 중요한 패키지 그룹 레시피 파일은 다음과 같다.
+    ```
+    poky/meta/recipes-core/packagegroups/
+    |- nativesdk-packagegroup-sdk-host.bb
+    |- packagegroup-base.bb
+    |- packagegroup-core-boot.bb
+    |- packagegroup-core-buildessential.bb
+    |- packagegroup-core-eclipse-debug.bb
+    |- packagegroup-core-nfs.bb
+    |- packagegroup-core-sdk.bb
+    |- packagegroup-core-ssh-dropbear.bb
+    |- packagegroup-core-ssh-openssh.bb
+    |- packagegroup-core-standalone-sdk-target.bb
+    |- packagegroup-core-tools-debug.bb
+    |- packagegroup-core-tools-profile.bb
+    |- packagegroup-core-tools-testapps.bb
+    |- packagegroup-cross-canadian.bb
+    |- packagegroup-go-cross-canadian.bb
+    |- packagegroup-go-sdk-target.bb
+    |- packagegroup-self-hosted.bb
+    ```
+
+## 커스텀 빌드 스크립트를 통한 빌드 환경 구축
+
+* 기존 빌드 환경을 초기화할 때에는 빌드 전에 oe-init-build-env 스크립트를 실행했다.
+  - `source poky/oe-init-build-env`
+  - 이 스크립트를 실행하면 기본적으로 build 디렉토리가 생성되고 내부에 몇 가지 환경 설정 파일과 디렉토리가 만들어진다.
+  - build 디렉토리는 bitbake가 빌드 작업을 수행할 때 산출물들이 만들어지는 곳이다.
+  - 실습을 진행하면서 머신 레이어, 배포 레이어를 만들 것이며 빌드의 산출물을 구분해 따로 저장해야 하므로 환경 설정 파일(local.conf, bblayers.conf)도 그때마다 바뀌어야 한다.
+
+* TEMPLATECONF 변수: 빌드에 필요한 환경 설정 파일을 어디서 복사해 올지 지정해 주는 변수
+  - 이 변수의 기본값은 'poky/meta-poky/conf' 디렉토리를 가리킨다.
+  - 여기에서 .sample 파일을 build/conf 디렉토리에 복사하고 확장자 .sample을 삭제한다.
+  - bblayers.conf.sample 파일의 placeholder인 OEROOT 변수는 오픈임베디드 빌드 시스템의 특정 파일의 절대 경로로 대체된다.
+  - 만약 build 디렉토리를 포함한 소스 전체를 배포할 경우 절대 경로값이 문제가 될 수 있다. (PC 환경마다 레이어 경로가 다르므로)
+  - oe_init_build_env 스크립트에서 인클루드하고 있는 poky/scripts/oe-setup-builddir 파일에서 bblayers.conf, local.conf, conf-notes.txt 파일의 위치를 지정한다.
+
+* conf-notes 파일: oe_init_build-env 스크립트를 실행했을 때 화면에 출력되는 안내 문구들이 들어 있으며 자신이 원하는 문구가 있으면 이 파일을 수정하면 된다.
+  - 이 파일의 위치는 다음과 같다: ~/poky_src/poky/meta-poky/conf-notes.txt
+
+### 실습 순서
+
+* 커스텀 빌드 스크립트를 작성해 보자.
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout buildscript`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b buildscript`
+
+* 앞에서 만든 meta-great 레이어에 template이라는 디렉토리를 만든다.
+  - 이 디렉토리 안에 poky_src/poky/meta-poky/conf 디렉토리에 있는 bblayers.conf.sample, local.conf.sample, conf-notes.txt 파일을 복사한다.
+
+* 복사한 파일들을 수정한다.
+
+~/poky_src/poky/meta-great/template/bblayers.conf.sample (기존 내용 수정)
+```
+POKY_BBLAYERS_CONF_VERSION = "2"
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+BBLAYERS ?= " \
+  ##OEROOT##/meta \
+  ##OEROOT##/meta-poky \
+  ##OEROOT##/meta-yocto-bsp \
+  ##OEROOT##/meta-hello \
+  ##OEROOT##/meta-nano-editor \
+  ##OEROOT##/meta-great \
+  "
+```
+
+~/poky_src/poky/meta-great/template/local.conf.sample (아래 내용을 추가함)
+```
+...
+
+CONF_VERSION = "1"
+
+# PREMIRRORS 위치를 지정함
+INHERIT += "own-mirrors"
+SOURCE_MIRROR_URL = "file://${COREBASE}/../source-mirrors"
+
+# 미러를 위한 tarball 파일을 압축함
+BB_GENERATE_MIRROR_TARBALLS = "1"
+
+# 공유 상태 캐시 미러를 생성함
+SSTATE_MIRRORS = "file://.* file://${COREBASE}/../sstate-cache/PATH"
+SSTATE_DIR = "${TOPDIR}/sstate-cache"
+
+DISTRO_FEATURES_append = " systemd"
+DISTRO_FEATURES_remove = "sysvinit"
+VIRTUAL-RUNTIME_init_manager = "systemd"
+VIRTUAL-RUNTIME_initscripts = "systemd_compat-units"
+DISTRO_FEATURES_BACKFILL_CONSIDERED = "sysvinit"
+VIRTUAL-RUNTIME_initscript = "systemd-compat-units"
+```
+
+~/poky_src/poky/meta-great/template/conf-notes.txt (기존 내용 수정)
+```
+### Shell environment set up for builds. ###
+Welcome! This is my yocto example.
+You can now run 'bitbake <target>'
+
+Common targets are:
+    core-image-minimal
+
+You can also run generated qemu images with a command like 'runqemu qemux86'
+```
+
+* 빌드 스크립트 buildenv.sh를 작성한다.
+
+~/poky_src/buildenv.sh
+```
+#!/bin/bash
+# find_top_dir(): poky 디렉토리의 절대 경로를 찾아내는 함수
+function find_top_dir()
+{
+    local TOPDIR=poky
+# move into script file path
+    cd $(dirname ${BASH_SOURCE[0]})
+    if [ -d $TOPDIR ]; then
+        echo $(pwd)
+    else
+        while [ ! -d $TOPDIR ] && [ $(pwd) != "/" ];
+        do
+            cd ..
+        done
+        if [ -d $TOPDIR ]; then
+            echo $(pwd)
+        else
+            echo "/dev/null"
+        fi
+    fi
+}
+
+ROOT+$(find_top_dir)
+export TEMPLATECONF=${ROOT}/poky/meta-great/template/    # template 디렉토리의 절대 경로 지정
+source poky/oe_init-build-env build2    # 차후 bitbake가 빌드 작업을 하며 모든 작업의 결과물들을 저장할 디렉토리를 지정함
+```
+
+* buildenv.sh 스크립트에게 실행 권한을 부여하고 실행한다.
+
+```
+$ chmod 777 buildenv.sh
+$ source buildenv.sh
 ```
 
 ...
