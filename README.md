@@ -559,6 +559,10 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=de10de48642ab74318e893a61105afbb \
 
 ## 레시피 확장 파일을 통한 hello 실행 파일 추가
 
+* 기존 GitHub에서 받은 소스에서 다음과 같이 확인할 수 있다.
+  - 기존 GitHub에서 받은 소스: `$ git checkout hello_second`
+  - 새로 받는 방법: `$ git clone https://GitHub.com/greatYocto/poky_src.git -b hello_second`
+
 * 기존 core-image-minimal.bb 파일은 다음 경로에 존재한다.
   - `poky/meta/recipes-core/images/core-image-minimal.bb`
 
@@ -693,6 +697,10 @@ systemd의 구조
 
 ## systemd를 통한 hello 애플리케이션 실행
 
+* 다음과 같이 소스를 받는다.
+  - 기존 GitHub에서 받은 소스: `$ git checkout systemD`
+  - 새로 받는 방법: `$ git clone https://GitHub.com/greatYocto/poky_src.git -b systemD`
+
 * 다음과 같은 파일이 있어야 한다.
 
 ```
@@ -826,6 +834,7 @@ $ runqemu core-image-minimal nographic
   - libtool: 라이브러리 생성 처리
 
 * 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout nano`
   - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b nano`
   - git으로부터 nano editor tarball 파일 받는 방법: `~/tmp$ wget https://www.nano-editor.org/dist/v6/nano-6.0.tar.gz`
 
@@ -939,6 +948,10 @@ $ runqemu core-image-minimal nographic
 
 ## rm_work.bbclass를 통한 빌드 임시 파일 제거하기
 
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout rm_work`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b rm_work`
+
 * rm_work.bbclass: 오픈임베디드 빌드 시스템이 빌드 작업을 끝내고 작업한 파일들을 삭제하는 기능을 수행하는 태스크
   - 빌드 과정에서 생성된 불필요한 파일들을 모두 저장할 필요가 없을 때 이 기능을 사용한다.
   - 이 기능을 사용하려면 레시피(.bb) 또는 레시피 확장 파일(.bbappend)에서 `inherit rm_work`를 추가한다.
@@ -947,6 +960,10 @@ $ runqemu core-image-minimal nographic
     (효과는 어마어마하다! 수백, 수천배 차이... 대신 빌드를 여러 번 할 경우 속도 저하는 피할 수 없다.)
 
 ## externalsrc를 이용한 외부 소스로부터 소스 빌드
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout externalsrc`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b externalsrc`
 
 * 실수로 clean, fetch, unpack, patch 등의 태스크를 수행하면 다시 소스를 새롭게 받아오므로 수정한 소스가 사라지는 문제가 있다.
   - 이런 문제를 피하기 위해 externalsrc.bbclass라는 클래스를 사용한다. (fetch, unpack, path 태스크 생략함)
@@ -1140,7 +1157,18 @@ $ runqemu core-image-minimal nographic
     ```
   - 만약 local.conf 파일에서 EXTRA_IMAGE_FEATURES 변수에 'tools-sdk' 기능을 추가할 경우 이미지에 gcc 컴파일러 등이 설치된다. (타깃에서 vim으로 c 파일을 작성하기 컴파일도 할 수 있음)
 
-* 패키지 그룹
+## 패키지 그룹
+
+* 패키지 그룹: 이미지에 포함될 수 있는 패키지들의 집합
+  - IMAGE_INSTALL 변수와의 차이점: 각각의 패키지를 추가하는 것이 아니라 그룹핑해 여러 개의 패키지를 한 번에 추가한다.
+  - packagegroups.bbclass 클래스 파일을 상속하여 사용한다.
+  - 이것은 어떤 것도 빌드하지 않고 어떤 결과물도 만들지 않는다.
+  - 다만 여러 패키지들을 그룹핑해 의존성만을 부여한다.
+  - 패키지 그룹의 레시피 파일 이름: packagegroup-<name>.bb (레시피 작업 디렉토리인 recipes-xxx 디렉토리 아래 packagegroups라는 디렉토리를 만들고 그 안에 넣으면 됨)
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout packagegroup`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b packagegroup`
 
 ...
 
