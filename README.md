@@ -1548,13 +1548,13 @@ oe-core (./meta) | 기본 제공 레이어
 ```
 ~/poky_src/poky/meta-great
 |- classes
-|   |- great-base-image.bbclass
+|   |- great-base-image.bbclass    # 패키지 그룹 레시피들이 추가되어 있음 (오픈임베디드 코어에서 정의된 것)
 |- conf
 |   |- layer.conf
 |- recipes-core
 |   |- images
 |   |   |- core-image-minimal.bbappend
-|   |   |- great-image.bb
+|   |   |- great-image.bb    # great-base-image.bbclass 클래스 파일을 상속함
 |   |- packagegroups
 |       |- packagegroup-great.bb
 |- template
@@ -1563,7 +1563,99 @@ oe-core (./meta) | 기본 제공 레이어
     |- local.conf.sample
 ```
 
+~/poky_src/poky/meta-great/conf/layer.conf 파일 수정
+```
+BBPATH =. "${LAYERDIR}:"
+BBFILES += "${LAYERDIR}/recipes*/*/*.bb"
+BBFILES += "${LAYERDIR}/recipes*/*/*.bbappend"
+BBFILE_COLLECTIONS += "great"
+BBFILE_PATTERN_great = "^${LAYERDIR}/"
+BBFILE_PRIORITY_great = "11"
+LAYERDEPENDS_great = "core"    # great 레이어가 core 레이어를 의존함 (core-image.bbclass를 사용하므로 core 레이어가 필요함)
+LAYERSERIES_COMPAT_great = "${LAYERSERIES_COMPAT_core}"
+```
+
+* core 레이어는 이렇게 찾을 수 있다: `~/poky_src/poky$ grep -rni "BBFILE_COLLECTIONS" ./ | grep core`
+
+~/poky_src/poky/meta-great/classes/great-base-image.bbclass 생성
+```
+inherit core-image
+IMAGE_FSTYPES = " tar.gz2 ext4"    # 2개의 루트 파일 시스템을 생성할 것을 의미함
+IMAGE_ROOTFS_SIZE = "10240"    # 생성될 루트 파일 시스템 이미지를 킬로바이트 단위로 지정 (최종 루트 파일 시스템이 이 크기보다 크면 이 값은 더 커지게 됨)
+IMAGE_ROOTFS_EXTRA_SPACE = "10240"    # 루트 파일 시스템에 추가적인 빈 공간을 만듦
+IMAGE_ROOTFS_ALIGNMENT = "1024"    # 루트 파일 시스템 이미지 크기를 이 값의 배수로 맞춤
+CORE_IMAGE_BASE_INSTALL = "\
+    packagegroup-core-boot \
+    packagegroup-base-extended \
+    ${CORE_IMAGE_EXTRA_INSTALL} \
+"
+```
+
+~/poky_src/poky/meta-great/recipes-core/images/great-image.bb 생성
+```
+SUMMARY = "A very small image for yocto test"
+inherit great-base-image
+LINGUAS_KO_KR = "ko-kr"    # 한국어 추가
+LINGUAS_EN_US = "en-us"    # 영어 추가
+IMAGE_LINGUAS = "${LINGUAS_KO_KR} ${LINGUAS_EN_US}"
+IMAGE_INSTALL += "packagegroup-great"    # 앞의 예제에서 만든 패키지 그룹 레시피 (hello, nano 패키지 포함)
+IMAGE_OVERHEAD_FACTOR = "1.3"    # 실제 필요한 루트 파일 시스템 크기에 30%의 여유 공간을 추가함
+```
+
+~/poky_src/poky/meta-great/template/conf_notes.txt 수정
+```
+### Shell environment set up for builds. ###
+Welcome! This is my yocto example.
+You can now run 'bitbake <target>'
+
+Common targets are:
+   great-image
+
+You can also run generated qemu images with a command like 'runqemu qemux86'
+```
+
+~/poky_src/poky/meta-great/recipes-core/images/great-image.bb 수정
+```
+SUMMARY = "A very small image for yocto test"
+inherit great-base-image
+
+LINGUAS_KO_KR = "ko-kr"
+LINGUAS_EN_US = "en-us"
+IMAGE_LINGUAS = "${LINGUAS_KO_KR} ${LINGUAS_EN_US}"
+IMAGE_INSTALL += "packagegroup-great"
+IMAGE_OVERHEAD_FACTOR = "1.3"
+
+inherit extrausers
+
+EXTRA_USERS_PARAMS = "\
+   groupadd greatgroup; \    # 그룹 생성
+   useradd -p `openssl passwd 9876` great; \    # 사용자 생성, 암호 9876
+   useradd -g greatgroup great; \    # 사용자 great의 그룹을 greatgroup으로 지정
+"
+```
+
+~/poky_src/poky/meta-great/template/local.conf.sample
+```
 ...
+EXTRA_IMAGE_FEATURES += "splash"
+```
+
+* 이미지 생성을 위해 빌드를 진행한다.
+
+```
+$ source buildenv.sh
+$ bitbake great-image
+$ runqemu great-image nographic
+```
+
+* 이제 QEMU에서 계정 great, 암호 9876을 입력하여 로그인할 수 있다.
+
+* QEMU를 종료하려면 다음과 같이 하면 된다.
+
+```
+# su
+# poweroff
+```
 
 ## BSP 레이어
 
