@@ -1659,6 +1659,20 @@ $ runqemu great-image nographic
 
 ## BSP 레이어
 
+* BSP(Board Support Package): 주어진 타깃이 되는 장치의 하드웨어를 구동하는 데 필요한 OS와 장치 드라이버 등을 말한다.
+  - OS와 장치 드라이버를 메모리에 배치하는 부트로더도 포함한다.
+
+| 레이어 구조 |
+| ----------- |
+| 커스텀 레이어 (./meta-myproject) |
+| 배포 레이어 (./meta-great) |
+| BSP 레이어 (./meta-great-bsp) |
+| 포키 참조 배포 레이어 (./meta-poky) |
+| oe-core (./meta) |
+
+* 이 실습에서는 실제 물리적인 보드가 없고 QEMU라는 가상의 장치를 사용하므로 물리적인 디바이스 설정, 구동을 해볼 수는 없다.
+  - BSP 레이어가 무엇이고, 어떻게 만드는지만 알아보자.
+
 ...
 
 ## 커스텀 BSP 레이어 만들기
