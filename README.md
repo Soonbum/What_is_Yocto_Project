@@ -1673,7 +1673,76 @@ $ runqemu great-image nographic
 * 이 실습에서는 실제 물리적인 보드가 없고 QEMU라는 가상의 장치를 사용하므로 물리적인 디바이스 설정, 구동을 해볼 수는 없다.
   - BSP 레이어가 무엇이고, 어떻게 만드는지만 알아보자.
 
-...
+* QEMU 에뮬레이터에 대한 머신 환경 설정 파일 poky/meta/conf/machine/qemux86-64.conf 파일에 대해 알아보자.
+
+~/poky_src/poky/meta/conf/machine/qemux86-64.conf
+```
+PREFERRED_PROVIDER_virtual/xserver ?= "xserver-xorg"    # 다중 패키지 중 어떤 패키지를 사용하는지 정함
+PREFERRED_PROVIDER_virtual/libgl ?= "mesa"
+PREFERRED_PROVIDER_virtual/libgles1 ?= "mesa"
+PREFERRED_PROVIDER_virtual/libgles2 ?= "mesa"
+
+require conf/machine/include/qemu.inc
+DEFAULTTUNE ?= "core2-64"                                # 빌드 시스템에서 사용할 CPU 아키텍처와 ABI(Application Binary Interface)를 선택함
+require conf/machine/include/tune-core2.inc
+require conf/machine/include/qemuboot-x86.inc
+UBOOT_MACHINE ?= "qemu-x86_64_defconfig"
+KERNEL_IMAGETYPE = "bzImage"                            # 커널 이미지 파일의 명명 체계 결정
+
+SERIAL_CONSOLES ?= 115200;ttyS0 115200;ttyS1"            # getty를 사용할 수 있도록 serial console(tty)을 정의함 (전송속도와 tty 장치)
+
+# Install swrast and glx if opengl is in DISTRO_FEATURES and x32 is not in use.
+# This is because gallium swrast driver was found to crash X server on startup in qemu x32
+XSERVER = "xserver-xorg \
+          ${@bb.utils.contains('DISTRO_FEATURES', 'opengl', \
+          bb.utils.contains('TUNE_FEATURES', 'mx32', '',
+          'mesa-driver-swrast xserver-xorg-extension-glx', d), '', d)} \
+          xf86-video-cirrus \
+          xf86-video-fbdev \
+          xf86-video-vmware \
+          xf86-video-modesetting \
+          xf86-video-vesa \
+          xserver-xorg-module-libint10 \
+          "
+
+MACHINE_FEATURES += "x86 pci"                # 장치에서 지원되는 하드웨어 관련 기능들을 기술함 (alsa, bluetooth, usbgadget, screen, vfat 등도 있음)
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS+= "v86d"    # 이미지 빌드의 일부, 특정한 머신에 설치해야 하는 필수적인 패키지들의 목록 (기기가 부팅하는 데 필수적임)
+MACHINE_EXTRA_RRECOMMENDS = "kernel-module-snd-ens1370 kernel-module-snd-rawmidi"    # 특정 머신에 설치해야 하는 패키지들의 목록 (기기가 부팅하는 데 필수적이지는 않음)
+
+WKS_FILE ?= "qemux86-directdisk.wks"
+do_image_wic[depends] += "syslinux:do_populate_sysroot syslinux-native:do_populate_sysroot mtools-native:do_populate_sysroot dosfstools-native:do_populate_sysroot"
+
+# For runqemu
+QB_SYSTEM_NAME = "qemu-system-x86_64"
+```
+
+qemu.inc
+```
+PREFERRED_PROVIDER_virtual/xserver ?= "xserver-xorg"
+PREFERRED_PROVIDER_virtual/egl ?= "mesa"
+PREFERRED_PROVIDER_virtual/libgl ?= "mesa"
+PREFERRED_PROVIDER_virtual/libgles1 ?= "mesa"
+PREFERRED_PROVIDER_virtual/libgles2 ?= "mesa"
+
+XSERVER ?= "xerver-gz \
+           ${@bb.utils.contains('DISTRO_FEATURES', 'opengl',
+           'mesa-driver-swrast xserver-xorg-extension-glx', '', d)} \
+           xf86-video-fbdev \
+           "
+
+MACHINE_FEATURES = "alsa bluetooth usbgadget screen vfat"
+MACHINEOVERRIDES =. "qemuall:"
+IMAGE_FSTYPES += "tar.bz2 ext4"    # 최종적으로 생성될 이미지의 타입을 알려줌 (bzip2를 사용한 tar 압축 파일, ext4 이미지 타입의 파일)
+# Don't include kernels in standard images
+RDEPENDS${KERNEL_PACKAGE_NAME}-base = ""
+# Use a common kernel recipe for all QEMU machines
+PREFERRED_PROVIDER_virtual/kernel ??= "linux-yocto"    # 다중 PROVIDES가 존재할 때 어떤 PROVIDES를 선택할 것인가 결정함 (여기서는 linux-yocto.bb 레시피 파일에서 만들어진 커널을 사용함)
+EXTRA_IMAGEDEPENDS += "qemu-system-native qemu-helper-native"    # 네이티브 플랫폼, 즉 호스트 PC(x86)를 위한 패키지를 생성하는 레시피
+# Provide the nfs server kernel module for all qemu images
+KERNEL_FEATURES_append_pn-linux-yocto = " features/nfsd/nfsd-enable.scc"    # 진보된 메타데이터로부터 제공된 커널 환경 설정 정보나 패치 등이 포함됨
+KERNEL_FEATURES_append_pn-linux-yocto-rt = " features/nfsd/nfsd-enable.scc"
+IMAGE_CLASSES += "qemuboot"
+```
 
 ## 커스텀 BSP 레이어 만들기
 
@@ -1748,6 +1817,10 @@ $ runqemu great-image nographic
   - `VAR3_append = "${VAR1}"` : 변수 후입 (VAR3 뒤에 VAR2을 붙임, 공백 없음) (늦은 할당) [Yocto honister 버전 이상에서는 :append로 바뀜]
   - `VAR1_remove = "123"` : 공백으로 구분된 "123"과 일치하는 문자열만 삭제함 ("123 456 789 123456789 789 456 123" --> " 456 789 123456789 789 456 ") [Yocto honister 버전 이상에서는 :remove로 바뀜]
   - 변수와 마찬가지로 함수 이름에도 _prepend, _append를 붙이면 본체 함수 앞뒤에 다른 함수가 자동으로 호출됨
+
+## bitbake 문법 (3)
+
+...
 
 ## 로그 출력 함수
 
