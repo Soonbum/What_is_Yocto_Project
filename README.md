@@ -1944,17 +1944,103 @@ $ runqemu great-image nographic
   - 메뉴 편집기를 저장하고 종료하면 커널 소스 최상위 디렉토리에 .config 파일이 만들어진다.
   - 커널 빌드시 .config 파일을 기반으로 autoconfig.h 파일이 생성되는데 선택된 환경 설정 옵션들은 autoconfig.h 파일에 매크로 상수로 표현되어 커널 소스 전체에 영향을 끼친다.
 
+Kconfig 파일의 예
+```
+config ACPI_I2C_OPREGION
+  bool "ACPI I2C Operation region support"
+  depends on I2C=y && ACPI
+  default y
+  help
+    Say Y here if you want to enable ACPI I2C operation region support
+    Operation Regions allow firmware (BIOS) code to access I2C slave devices,
+    such as smart batteries through an I2C host controller driver.
+```
+
+make menuconfig 명령어 실행 화면
+```
+    *** Compiler: x86_64-poky-linux-cc (GCC) 9.5.0 ***
+    General setup  --->
+[*] 64-bit kernel
+    Processor type and features  --->
+    Power management and ACPI options  --->
+    Bus options (PCI etc.)  --->
+    Binary Emulations  --->
+    Firmware Drivers  --->
+[*] Virtualization  --->
+    General architecture-dependent options  --->
+[*] Enable loadable module support  --->
+-*- Enable the block layer  --->
+    IO Schedulers  --->
+    Executable file formats  --->
+    Memory Management options  --->
+[*] Networking support  --->
+    Device Drivers  --->
+    File systems  --->
+    Security options  --->
+-*- Cryptographic API  --->
+    Library routines  --->
+    Kernel hacking  --->
+```
+
+.config 파일의 일부
+```
+CONFIG_CC_IS_GCC=y
+CONFIG_GCC_VERSION=90500
+CONFIG_CLANG_VERSION=0
+CONFIG_CC_HAS_ASM_GOTO=y
+CONFIG_CC_HAS_ASM_INLINE=y
+CONFIG_IRQ_WORK=y
+CONFIG-BUILDTIME_EXTABLE_SORT=y
+CONFIG_THREAD_INFO_IN_TASK=y
+```
+
+생성된 autoconfig.h
+```
+#define CONFIG_NLS_CODEPAGE_861_MODULE 1
+#define CONFIG_RING_BUFFER 1
+#define CONFIG_NF_CONNTRACK_H323_MODULE 1
+#define CONFIG_HAVE_ARCH_SECCOMP_FILTER 1
+#define CONFIG_SND_PROC_FS 1
+#define CONFIG_SCSI_DMA 1
+```
+
 * 메뉴 편집기를 사용하지 않고 사전에 타깃 머신에 맞게 커널 환경 옵션들을 만들어 놓을 수 있다. (defconfig 파일)
   - 미리 필요한 설정이 저장되어 있어 사용하기 편하다.
   - 주로 칩 벤더에서 초기 보드 bring-up을 위해 defconfig 파일을 배포하는 경우가 많다.
   - 보통 이 파일들은 커널 소스 내의 'arch/<아키텍처>/configs/' 디렉토리에 존재한다.
 
+x86_64_defconfig 파일
+```
+CONFIG_POSIX_MQUEUE=y
+CONFIG_BSD_PROCESS_ACCT=y
+CONFIG_TASKSTATS=y
+CONFIG_TASK_DELAY_ACCT=y
+CONFIG_TASK_XACCT=y
+```
+
 * 커널 소스에서 직접 .config, defconfig 파일 생성하기
+  - 다음 명령어를 입력하면 커널 소스 트리의 최상위 디렉토리에 defconfig이라는 파일이 생성된다.
 
 ```
 $ make ARCH=<아키텍처 이름, arm, x86 등> menuconfig
 $ make ARCH=<아키텍처 이름, arm, x86 등> savedefconfig
 ```
+
+* 혹은 Yocto 명령어를 통해 커널 환경 설정 파일들을 생성할 수도 있다.
+  - 1-1번 방법: make menuconfig 명령 실행을 통한 메뉴 편집기 실행
+    `$ bitbake -c menuconfig <커널 레시피 이름>` 또는 `$ bitbake -c menuconfig virtual/kernel`
+  - 1-2번 방법: .config 파일 생성
+    `$ bitbake -c kernel-configme <커널 레시피 이름>` 또는 `$ bitbake -c kernel-configme virtual/kernel`
+  - 2번 방법: defconfig 파일 생성
+    `$ bitbake -c savedefconfig <커널 레시피 이름>` 또는 `$ bitbake -c savedefconfig virtual/kernel`
+
+* .config, defconfig 파일을 생성한 후에 커널을 컴파일한다.
+
+```
+$ bitbake -C compile virtual/kernel
+```
+
+## 변경 또는 추가된 커널 환경 옵션들을 패치로 생성
 
 ...
 
