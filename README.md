@@ -1997,7 +1997,7 @@ build_target
   - 변수와 마찬가지로 함수 이름에도 _prepend, _append를 붙이면 본체 함수 앞뒤에 다른 함수가 자동으로 호출됨
 
 * 조건부 변수값 할당
-  - `OVERRIDES = "sun:rain:snow" : 콜론으로 구분된 값 목록을 갖는다. (오른쪽이 우선순위가 높음)
+  - `OVERRIDES = "sun:rain:snow"` : 콜론으로 구분된 값 목록을 갖는다. (오른쪽이 우선순위가 높음)
   - 예시
     ```
     OVERRIDES = "korean:american:vietnamese"
