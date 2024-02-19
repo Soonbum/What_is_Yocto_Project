@@ -1744,7 +1744,175 @@ KERNEL_FEATURES_append_pn-linux-yocto-rt = " features/nfsd/nfsd-enable.scc"
 IMAGE_CLASSES += "qemuboot"
 ```
 
+* `$ bitbake-getvar -r core-image-minimal OVERRIDES`  # 여기서 qemu.inc 파일에서 사용한 MACHINEOVERRIDES 변수를 보십시오
+  ```
+  ...
+  #   "${TARGET_OS}:${TRANSLATED_TARGET_ARCH}:pn-${PN}:${MACHINEOVERRIDES}:${DISTROOVERRIDES}:${CLASSOVERRIDE}${LIBCOVERRIDE}:forcevariable"
+  OVERRIDES="linux:x86-64:pn-core-image-minimal:qemuall:qemux86-64:poky:class-target:libc-glibc:forcevariable"
+  ```
+  - local.conf (`MACHINE = "qemux86-64"`) --> bitbake.conf (`MACHINEOVERRIDES = ${MACHINE}`) --> bitbake.conf (`OVERRIDES = ${MACHINEOVERRIDES})
+
 ## 커스텀 BSP 레이어 만들기
+
+* 고유의 타깃 머신 환경 설정을 제공하고 이름을 great라고 명명한다.
+  - 가상의 QEMU 머신을 사용하기 때문에 기존에 Poky에서 제공한 머신 관련 설정을 그대로 사용하고, BSP 레이어에 포함된 커널 레시피는 수정할 것이다.
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout custom_bsp`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b custom_bsp`
+
+* BSP 레이어 생성하기
+  ```
+  ~/poky_src/poky/meta-great-bsp
+  |- conf
+      |- layer.conf
+      |- machine
+          |- great.conf
+  ```
+
+* 레이어를 인식할 수 있도록 bblayers.conf.sample 파일을 수정한다.
+
+~/poky_src/poky/meta-great/template/bblayers.conf.sample
+```
+POKY_BBLAYERS_CONF_VERSION = "2"
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+BBLAYERS ?= " \
+  ##OEROOT##/meta \
+  ##OEROOT##/meta-poky \
+  ##OEROOT##/meta-yocto-bsp \
+  ##OEROOT##/meta-hello \
+  ##OEROOT##/meta-nano-editor \
+  ##OEROOT##/meta-great \
+  ##OEROOT##/meta-great-bsp \ "
+```
+
+* 수정한 bblayers.conf.sample 파일을 빌드 환경에 반영하려면 build/conf 디렉토리를 삭제해야 한다.
+  - bitbake는 한 번 생성된 conf 디렉토리 내에 파일들의 내용을 빌드시 업데이트하지 않는다.
+  - conf 디렉토리를 삭제해야 bblayers.conf 파일에 수정된 내용이 반영된다.
+
+```
+~/poky_src$ rm -rf build/conf
+~/poky_src$ source buildenv.sh
+```
+
+* 새로 생성된 레이어의 conf 디렉토리에 layer.conf 파일을 생성한다.
+  - 이 파일은 bitbake가 layer.conf 파일을 처리하면서 특정 레이어에 포함된 레시피, 클래스, 환경 설정 파일들을 인지하게 해준다.
+  - BBFILES 변수에 레시피, 레시피 확장 파일들의 경로를 추가해 줌으로써 레시피, 레시피 확장 파일을 인지할 수 있도록 해준다.
+
+~/poky_src/poky/meta-great-bsp/conf/layer.conf
+```
+BBPATH =. "${LAYERDIR}:"
+BBFILES += "${LAYERDIR}/recipes*/*/*.bb"
+BBFILES += "${LAYERDIR}/recipes*/*/*.bbappend"
+BBFILE_COLLECTIONS += "greatbsp"
+BBFILE_PATTERN_greatbsp = "^${LAYERDIR}/"
+BBFILE_PRIORITY_greatbsp = "6"
+LAYERSERIES_COMPAT_greatbsp = "${LAYERSERIES_COMPAT_core}"
+```
+
+* 새로 생성된 레이어의 conf 디렉토리에 machine 디렉토리를 만들고 머신 환경 설정 파일인 great.conf 파일을 생성한다.
+  - 전체 파일 내용은 qemux86-64.conf 파일과 동일하나, MACHINEOVERRIDES 변수에 great 머신 이름을 넣은 것만 다르다.
+
+~/poky_src/poky/meta-great-bsp/conf/machine/great.conf
+```
+PREFERRED_PROVIDER_virtual/xserver ?= "xserver-xorg"
+PREFERRED_PROVIDER_virtual/libgl ?= "mesa"
+PREFERRED_PROVIDER_virtual/libgles1 ?= "mesa"
+PREFERRED_PROVIDER_virtual/libgles2 ?= "mesa"
+require conf/machine/include/qemu.inc    # 이 파일이 존재하지 않으므로 모든 레이어 상의 conf 디렉토리에서 찾아본다. (poky/meta/conf/machine/includeqemu.inc 파일을 찾음)
+                                         # require, include는 역할이 같지만 전자의 경우 파일이 존재하지 않으면 오류를 발생시키고, 후자의 경우 오류를 발생시키지 않음
+
+DEFAULTTUNE ?= "core2-64"
+require conf/machine/include/tune-core2.inc
+require conf/machine/include/qemuboot-x86.inc
+UBOOT_MACHINE ?= "qemu-x86_64_defconfig"
+KERNEL_IMAGETYPE = "bzImage"
+SERIAL_CONSOLES ?= "115200;ttyS0 115200;ttyS1"
+
+XSERVER = "xserver-xorg \
+          ${@bb.utils.contains('DISTRO_FEATURES', 'opengl', \
+          bb.utils.contains('TUNE_FEATURES', 'mx32', '',
+          'mesa-driver-swrast xserver-xorg-extension-glx', d), '', d)} \
+          xf86-video-cirrus \
+          xf86-video-fbdev \
+          xf86-video-vmware \
+          xf86-video-modesetting \
+          xf86-video-vesa \
+          xserver-xorg-module-libint10 \
+          "
+MACHINEOVERRIDES =. ":great:"    # MACHINEOVERRIDES 변수는 OVERRIDES 변수에 포함됨
+MACHINE_FEATURES += "x86 pci"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS += "v86d"
+MACHINE_EXTRA_RRECOMMENDS = "kernel-module-snd-ens1370 kernel-module-snd-rawmidi"
+WKS_FILE ?= "qemux86-directdisk.wks"
+do_image_wic[depends] += "syslinux:do_populate_sysroot syslinux-native:do_populate_sysroot mtools-native:do_populate_sysroot dosfstools-native:do_populate_sysroot"
+#For runqemu
+QB_SYSTEM_NAME = "qemu-system-x86_64"
+```
+
+* 전체 레이어의 구성은 다음과 같다.
+  ```
+  ~/poky_src/poky/meta-great-bsp
+  |- conf
+  |   |- layer.conf
+  |   |- machine
+  |       |- great.conf
+  |- recipes-kernel
+      |- linux
+          |- file
+          |- linux-yocto_5.4.bbappend
+  ```
+
+* 새로운 머신에서 사용할 커널에 대해 정의한다.
+  - Yocto에서 제공한 리눅스 커널을 새용한다.
+
+~/poky_src/poky/meta-great-bsp/recipes-kernel/linux/linux-yocto_5.4.bbappend
+```
+KBRANCH_great = "v5.4/standard/base"
+KMACHINE_great = "qemux86-64"
+SRCREV_machine_great = "35826e154ee014b64ccfa0d1f12d36b8f8a75939"
+COMPATIBLE_MACHINE_great = "great"
+LINUX_VERSION_great = "5.4.219"
+```
+
+* 새로 생성한 머신 환경 설정 파일 great.conf 파일이 bitbake 파싱 대상이 되려면 머신 이름을 나타내는 MACHINE 변수 값을 "great"로 설정해야 한다.
+
+~/poky_src/buildenv.sh
+```
+# !/bin/bash
+function find_top_dir()
+{
+    local TOPDIR=poky
+# move into script file path
+    cd $(dirname ${BASH_SOURCE[0]})
+
+    if [ -d $TOPDIR ]; then
+        echo $(pwd)
+    else
+        while [ ! -d $TOPDIR ] && [ $(pwd) != "/" ];
+        do
+            cd ..
+        done
+
+        if [ -d $TOPDIR ]; then
+            echo $(pwd)
+        else
+            echo "/dev/null"
+        fi
+    fi
+}
+
+ROOT=$(find_top_dir)
+export TEMPLATECONF=${ROOT}/poky/meta-great/template/
+export MACHINE="great"
+
+function build_target() {
+    source poky/oe-init-build-env build2
+}
+
+build_target
+```
 
 ...
 
@@ -1797,14 +1965,24 @@ IMAGE_CLASSES += "qemuboot"
 
 # 부록: 문법 설명
 
-## bitbake 문법 (1)
+## bitbake 문법
+
+* 타입
   - 변수 타입 없음, 모든 값을 문자열로 인식함 ("value" 식으로 표현함)
+
+* 변수명 규칙
   - 변수 이름에 제약을 두지 않음. 다만 관행적으로 변수 이름을 대문자로 시작하도록 함
+
+* 문자열 표현 방식
   - 예) BITBAKE_VAR = "value" 또는 BITBAKE_VAR = 'value'
+
+* 주석
   - #로 시작하면 주석으로 간주함
 
-## bitbake 문법 (2)
+* 의존성 지정
   - `DEPENDS = "hello"` : hello 레시피 파일에 의존함 (그것이 먼저 빌드되어야 함)
+
+* 변수값 할당
   - `VAR1 ?= "hello"` : 기본값 할당 (처음 입력한 기본값 할당이 유지됨)
   - `VAR1 ??= "hello"` : 약한 기본값 할당 (마지막에 입력한 기본값 할당으로 갱신됨), 그러나 '=', '?=' 연산자보다 우선순위가 낮음
   - `VAR2 = "${VAR1} my name is yocto"` : 변수 할당
@@ -1818,9 +1996,17 @@ IMAGE_CLASSES += "qemuboot"
   - `VAR1_remove = "123"` : 공백으로 구분된 "123"과 일치하는 문자열만 삭제함 ("123 456 789 123456789 789 456 123" --> " 456 789 123456789 789 456 ") [Yocto honister 버전 이상에서는 :remove로 바뀜]
   - 변수와 마찬가지로 함수 이름에도 _prepend, _append를 붙이면 본체 함수 앞뒤에 다른 함수가 자동으로 호출됨
 
-## bitbake 문법 (3)
-
-...
+* 조건부 변수값 할당
+  - `OVERRIDES = "sun:rain:snow" : 콜론으로 구분된 값 목록을 갖는다. (오른쪽이 우선순위가 높음)
+  - 예시
+    ```
+    OVERRIDES = "korean:american:vietnamese"
+    FOOD_korean = "rice"    # 값이 할당됨
+    FOOD_american = "bread"    # 값이 새로 할당됨 (우선순위가 american이 높으므로)
+    FOOD_british = "sandwitch"    # 이것은 실행되지 않음, 최종적으로 FOOD 변수에는 "bread"가 할당됨
+    CLOTHES = "kilt"
+    CLOTHES_korean = "hanbok"    # CLOTHES 값이 "hanbok"으로 오버라이드됨
+    ```
 
 ## 로그 출력 함수
 
