@@ -1870,10 +1870,10 @@ QB_SYSTEM_NAME = "qemu-system-x86_64"
 ~/poky_src/poky/meta-great-bsp/recipes-kernel/linux/linux-yocto_5.4.bbappend
 ```
 KBRANCH_great = "v5.4/standard/base"
-KMACHINE_great = "qemux86-64"
-SRCREV_machine_great = "35826e154ee014b64ccfa0d1f12d36b8f8a75939"
-COMPATIBLE_MACHINE_great = "great"
-LINUX_VERSION_great = "5.4.219"
+KMACHINE_great = "qemux86-64"    # 커널 메타데이터
+SRCREV_machine_great = "35826e154ee014b64ccfa0d1f12d36b8f8a75939"    # 커널 소스의 리비전 (Git의 커밋 해시 값)
+COMPATIBLE_MACHINE_great = "great"    # 호환되는 머신 이름
+LINUX_VERSION_great = "5.4.219"    # 현재 사용하려는 커널 버전
 ```
 
 * 새로 생성한 머신 환경 설정 파일 great.conf 파일이 bitbake 파싱 대상이 되려면 머신 이름을 나타내는 MACHINE 변수 값을 "great"로 설정해야 한다.
@@ -1914,7 +1914,19 @@ function build_target() {
 build_target
 ```
 
-...
+* 빌드 진행하기
+
+```
+~/poky_src/build2$ rm -rf conf/
+~/poky_src$ source buildenv.sh
+~/poky_src/build2$ bitbake great-image
+```
+
+* QEMU 실행하기
+
+```
+$ runqemu great-image nographic
+```
 
 # 커널 레시피
 
