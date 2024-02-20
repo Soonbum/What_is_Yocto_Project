@@ -2099,6 +2099,85 @@ $ bitbake -C compile virtual/kernel
 
 ## 변경 또는 추가된 커널 소스를 패치로 생성
 
+* 리눅스 커널 소스에 공식적으로 배포되는 커널 패치를 반영하는 방법은 2가지가 있다.
+  - SCM 도구인 깃 리포지터리에 저장된 커널 소스를 받아 커널 패치를 반영하고 다시 리포지터리에 저장하는 방법 (소스 관리가 용이함)
+  - 커널 레시피 파일에 패치를 추가해 빌드시 패치가 커널 소스에 반영되도록 하는 방법 (파생 커널을 생성할 때 용이함) --> 이 방법을 설명할 것이다.
+
+* 먼저 실제 커널 소스가 위치한 것을 찾는다. (커널 소스 위치: STAGING_KERNEL_DIR 변수)
+  - `~/poky_src/build2$ bitbake-getvar -r virtual/kernel STAGING_KERNEL_DIR`
+  - 이것을 실행하면 실제 커널 소스의 경로가 출력된다.
+
+* 커널 소스 상에서 간단한 디바이스 드라이버를 추가하고, 환경 설정 단편 파일을 만들어 커널 레시피에 추가해 본다.
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout kernel_patch`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b kernel_patch`
+
+* ~poky_src/build2/tmp/work-shared/great/kernel-source/drivers/misc/new_test_driver.c 파일 생성
+  ```
+  #include <linux/module.h>
+  static int __init new_test_driver_init(void)
+  {
+      pr_warn("This is new test driver! \n");
+      return 0;
+  }
+
+  static void __exit new_test_driver_exit(void)
+  {
+      pr_warn("Exit new test driver! \n");
+  }
+
+  module_init(new_test_driver_init);
+  module_init(new_test_driver_exit);
+  MODULE_AUTHOR("Dennis Cho");
+  MODULE_DESCRIPTION("New test driver");
+  MODULE_LICENSE("GPL");
+  ```
+
+* 드라이버를 위한 커널 설정 옵션을 Kconfig 파일 제일 하단에 추가한다.
+
+~/poky_src/build2/tmp/work-shared/great/kernel-source/drivers/misc/Kconfig
+```
+...
+config NEW_TEST_DRIVER
+    tristate "Kernel test driver"
+    help
+        This driver is kernel test driver
+
+source "drivers/misc/c2port/Kconfig"
+source "drivers/misc/eeprom/Kconfig"
+source "drivers/misc/cb710/Kconfig"
+source "drivers/misc/ti-st/Kconfig"
+source "drivers/misc/lis3lv02d/Kconfig"
+source "drivers/misc/altera-stapl/Kconfig"
+```
+
+* Makefile 제일 하단에 다음 내용을 추가한다.
+
+~/poky_src/build2/tmp/work-shared/great/kernel-source/drivers/misc/Makefile
+```
+...
+obj-$(CONFIG_NEW_TEST_DRIVER) += new_test_driver.o
+```
+
+* 현재 수정하는 커널 소스는 깃으로부터 받았기 때문에 수정/추가한 파일에 대해서는 `$ git status` 명령을 통해 확인할 수 있다.
+
+* 패치 파일을 생성하는 방법은 크게 3가지가 있다.
+  - `$ git diff` 명령어를 사용한 패치 파일 생성
+    * 패치 생성
+      ```
+      ~/poky_src/build2/tmp/work-shared/great/kernel-source/drivers/misc$ git diff > new_test_driver.patch
+      ```
+    * 패치 반영: 해당 소스 파일로 이동해 다음 명령어를 실행한다.
+      ```
+      $ patch -p1 < xxx.patch
+      또는
+      $ git apply xxx.patch
+      ```
+    * 패치 적용 후 변경 내용을 수작업으로 깃에 커밋해 주어야 한다. (패치 적용 실패 시에는 롤백시킬 수 있음)
+  - `$ git format-patch -n` 명령어를 사용한 패치 파일 생성
+  - quilt 툴을 사용한 패치 파일 생성
+
 ...
 
 ## 생성된 패치 및 환경 설정 단편 파일 커널 레시피에 추가
