@@ -2193,9 +2193,36 @@ obj-$(CONFIG_NEW_TEST_DRIVER) += new_test_driver.o
       $ git am xxx.patch    # 패치를 적용하고 추가로 커밋을 자동 생성함
       ```
   - quilt 툴을 사용한 패치 파일 생성
-    * ...
-
-...
+    * 퀼트: 패키지 및 사용자 정의 애플리케이션을 패치로 만들어 작업할 때 사용할 수 있는 범용 패치 메커니즘이다. (각 패치의 변경 사항을 추적함)
+    * 퀼트 패치는 스택으로 관리되며 이전의 모든 패치와 함께 기본 가상 폴더 트리 상단에 점진적으로 적용됨
+    * quilt 사용 방법은 다음과 같다
+      - quilt 툴 설치: `$ sudo apt install quilt`
+      - 패치 생성하기: `$ quilt new <패치 이름>`
+      - 현재 패치에 파일 추가하기: `$ quilt add <파일 이름>`
+      - 패치 파일 수정
+      - `$ quilt files` 명령으로 현재 패치에 들어 있는 파일들을 볼 수 있다.
+      - `$ quilt remove <파일 이름>` 명령어를 통해 패치 파일에 추가한 파일을 삭제할 수 있다.
+      - 현재 패치의 내용 보기: `$ quilt diff`
+      - 만들어진 패치 저장하기: `$ quilt refresh` (patches 디렉토리에 저장됨)
+      - 최근 refresh 이후의 수정 내용 보기: `$ quilt diff`
+    * 다음은 퀼트에 대한 예제이다.
+      - 임의의 디렉토리(예: test)를 생성하기 디렉토리 내에 test.txt 파일을 생성한다.
+        ```
+        Hello
+        I'm yocto.
+        bye
+        ```
+      - 새로운 패치 파일을 생성한다. (`$ quilt new mychange.patch`)
+      - 패치에 파일을 추가한다. (`~/test$ quilt add test.txt`)
+      - test.txt 파일을 수정한다.
+        ```
+        Hello
+        I'm yocto.
+        I supports linux build
+        bye
+        ```
+      - `$ quilt diff` 명령으로 변경 사항을 비교할 수 있다.
+      - `$ quilt refresh` 명령으로 기존 생성된 패치 파일을 갱신한다.
 
 ## 생성된 패치 및 환경 설정 단편 파일 커널 레시피에 추가
 
