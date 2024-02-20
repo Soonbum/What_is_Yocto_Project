@@ -2047,16 +2047,73 @@ $ bitbake -C compile virtual/kernel
   - 동일한 머신이라 하더라도 하드웨어/소프트웨어 변경에 따른 파생 머신들이 만들어질 수 있다.
   - 기본 환경 설정 파일 defconfig에는 공통적인 환경 설정 옵션들만 모아 놓는다.
   - 파생된 머신에 따라 추가/변경되는 환경 설정 옵션들만 따로 분리해 관련된 머신에만 반영할 수 있다. (Configuration Fragment 파일)
-
-* Configuration Fragment 파일
   - 이 파일은 새로 추가되는 환경 설정 옵션만 따로 저장하고 커널 레시피에 환경 설정 단편 파일을 추가한다.
   - 최종적으로 커널 레시피가 빌드될 때 .config 파일에 추가된 환경 설정 옵션들이 반영된다.
+
+* 환경 설정 단편 (Configuration Fragment) 파일
   - 예를 들어, 새로운 드라이버를 만들게 되었다고 가정하자. (옵션 CONFIG_NEW_DRIVER)
   - 이 환경 설정 옵션은 Kconfig 파일에 추가된다.
   - 드라이버 작업이 완료되면 새로 만든 환경 설정 옵션의 활성화를 위해 `$ bitbake -c menuconfig` 명령을 실행하여 추가된 환경 설정 옵션을 선택하고 저장하면 .config 파일이 생성된다.
   - 이때 새로 생성된 .config 파일은 추가한 환경 설정 옵션이 추가된 상태이다.
   - `$ bitbake -c diffconfig virtual/kernel` 명령을 통해 현재 상태에서 추가된 환경 설정 옵션만 추출한다.
   - 커널의 빌드 결과가 저장되는 WORKDIR 변수의 경로에 fragment.cfg라는 환경 설정 단편 파일이 생성된다.
+
+* 환경 설정 단편 (Configuration Fragment) 파일 생성 예시
+  - `$ bitbake virtual/kernel -c menuconfig`을 실행하면 다음과 같은 메뉴 편집기가 실행된다.
+    ```
+        *** Compiler: x86_64-poky-linux-cc (GCC) 9.5.0 ***
+        General setup  --->
+    [*] 64-bit kernel
+        Processor type and features  --->
+        Power management and ACPI options  --->
+        Bus options (PCI etc.)  --->
+        Binary Emulations  --->
+        Firmware Drivers  --->
+    [*] Virtualization  --->
+        General architecture-dependent options  --->
+    [*] Enable loadable module support  --->
+    -*- Enable the block layer  --->
+        IO Schedulers  --->
+        Executable file formats  --->
+        Memory Management options  --->
+    [*] Networking support  --->
+        Device Drivers  --->
+        File systems  --->
+        Security options  --->
+    -*- Cryptographic API  --->
+        Library routines  --->
+        Kernel hacking  --->
+    ```
+  - 메뉴 편집기 실행 화면에서 '/'를 누르면 검색 화면이 나타난다. 검색 화면에서 EXT3_FS를 입력하고 OK를 클릭한다.
+  - '1'을 눌러 환경 설정 옵션 EXT3_FS를 선택한다.
+  - 스페이스바를 2번 눌러 '*'로 선택이 되도록 한다.
+  - 화면 하단에서 SAVE를 클릭하고 엔터를 눌러 .config 파일로 저장한 다음 EXIT를 클릭해 메뉴 편집기를 종료한다.
+  - 갱신된 .config 파일을 토대로 `$ bitbake -c diffconfig virtual/kernel` 명령을 입력하여 환경 설정 단편 파일 .cfg를 만든다.
+  - fragment.cfg 파일이 생성되었다는 문구가 출력될 것이다.
+  - fragment.cfg 파일을 열어보면 변경된 EXT3_FS 환경 설정 옵션이 추가된 것을 확인할 수 있다.
+    ```
+    CONFIG_EXT3_FS=y
+    # CONFIG_EXT3_FS_POSIX_ACL is not set
+    # CONFIG_EXT3_FS_SECURITY is not set
+    ```
+
+## 변경 또는 추가된 커널 소스를 패치로 생성
+
+...
+
+## 생성된 패치 및 환경 설정 단편 파일 커널 레시피에 추가
+
+...
+
+## devshell을 이용한 코드 수정
+
+...
+
+## 커널 메타데이터
+
+...
+
+## non linux-yocto 스타일 커널 레시피 구성
 
 ...
 
