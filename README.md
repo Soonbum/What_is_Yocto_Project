@@ -2176,7 +2176,24 @@ obj-$(CONFIG_NEW_TEST_DRIVER) += new_test_driver.o
       ```
     * 패치 적용 후 변경 내용을 수작업으로 깃에 커밋해 주어야 한다. (패치 적용 실패 시에는 롤백시킬 수 있음)
   - `$ git format-patch -n` 명령어를 사용한 패치 파일 생성
+    * 변경/추가된 파일을 깃의 스테이징 영역으로 옮기고 `$ git commit` 명령을 입력한다.
+      ```
+      ~/poky_src/build2/tmp/work-shared/great/kernel-source/drivers/misc$ git add Kconfig Makefile new_test_driver.c
+      ~/poky_src/build2/tmp/work-shared/great/kernel-source/drivers/misc$ git commit
+      ```
+    * 커밋 메시지를 입력한다. ("[Learning yocto] add new kernel driver")
+    * 패치 파일을 생성한다.
+      ```
+      ~/poky_src/build2/tmp/work-shared/great/kernel-source/drivers/misc$ git format-patch -1
+      ```
+    * 현재 디렉토리에 '0001-xxx.patch' 파일이 생성된다.
+    * `$ git format-patch -n` 명령어는 패치 파일을 만들 때 현재 커밋을 기준으로 n번 직전 커밋과 비교해 패치 파일을 만들어낸다.
+    * 만들어진 패치 파일을 다른 동일한 커널 소스에 반영하려면 패치를 반영하려는 커널 소스로 이동해 다음을 실행한다.
+      ```
+      $ git am xxx.patch    # 패치를 적용하고 추가로 커밋을 자동 생성함
+      ```
   - quilt 툴을 사용한 패치 파일 생성
+    * ...
 
 ...
 
