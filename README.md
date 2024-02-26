@@ -2227,6 +2227,29 @@ obj-$(CONFIG_NEW_TEST_DRIVER) += new_test_driver.o
 
 ## 생성된 패치 및 환경 설정 단편 파일 커널 레시피에 추가
 
+* 앞에서 만든 환경 설정 단편 파일, 패치 파일을 복사해 커널 레시피를 위한 작업 디렉토리(recipes-kernel/linux)에 이동한다.
+
+* 앞에서 `$ git format-patch -1`을 통해 만든 '0001-xxx.patch' 파일을 'recipes-kernel/linux/file' 디렉토리에 복사하고 커널 환경 설정 단편 파일을 만든다.
+
+* `$ make -c menuconfig virtual/kernel` 명령을 통해 메뉴 편집기에서 새로 추가한 커널 환경 설정을 선택하고 저장한 후 `$ make -c diffconfig virtual/kernel`을 통해 커널 환경 설정 단편 파일을 만든다.
+  - 간단한 명령어로 만들 수도 있다: `$ echo "CONFIG_NEW_TEST_DRIVER=y" >> new-kernel-driver.cfg
+
+* 생성된 커널 환경 설정 단편 파일을 'recipes-kernel/linux/file' 디렉토리에 복사한다.
+
+```
+~/poky_src/poky/meta-great-bsp
+|- conf
+|   |- layer.conf
+|   |- machine
+|       |- great.conf
+|- recipes-kernel
+    |- linux
+        |- file
+        |   |- 0001-Learning-yocto-add-new-kernel-driver.patch
+        |   |- new-kernel-driver.cfg
+        |- linux-yocto_5.4.bbappend
+```
+
 ...
 
 ## devshell을 이용한 코드 수정
