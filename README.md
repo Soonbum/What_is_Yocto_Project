@@ -2,6 +2,7 @@
 
 * 임베디드 장치용 맞춤형 배포판 빌드를 위한 오픈 소스 프로젝트
   - 커스텀 리눅스를 만드는 도구는 Yocto 프로젝트 외에도 Linux Live Kit, Linux From Scracth(LFS), Live Magic, SUSE Studio Express 등이 있다.
+  - [The Yocto Project](https://www.yoctoproject.org/) 및 [Yocto Project 문서](https://docs.yoctoproject.org/) 사이트 링크를 참조하십시오.
 * 내가 개발하고자 하는 임베디드 환경(ARM, x86 등)에 맞게 커스텀 리눅스를 빌드해주는 도구 (셋팅의 번거로움을 줄여주는 역할)
   - Yocto: 오픈 임베디드 빌드 시스템이 리눅스 소프트웨어 스택을 빌드하는 데 필요한 모든 정보를 제공함 (크로스 컴파일러, 라이브러리 등)
   - bitbake: Yocto에서 제공하는 정보를 기반으로 빌드를 수행하는 빌드 도구
