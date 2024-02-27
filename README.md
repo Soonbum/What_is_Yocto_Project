@@ -2304,11 +2304,146 @@ $ bitbake -c kernel_configcheck -f virtual/kernel
 
 ## 커널 메타데이터
 
-...
+* 커널 메타데이터 (= 진보된 메타데이터)
+  - 사전에 만들어 놓은 커널 패치와 환경 설정 옵션을 리포지터리를 통해 제공하는 데이터
+  - 커널 환경 설정의 복잡성을 줄이고, 다양한 BSP를 지원하는 데 사용되는 소스 패치들을 제공하고, 다양한 리눅스 커널 유형들을 다루기 위함
+  - Yocto에서는 커널 개발자들이 승인한 리눅스 커널의 개별 버전을 위한 각각의 리포지터리를 갖고 있으며, 각 리포지터리는 커널 소스를 위한 다수의 브랜치와 커널 메타데이터를 위한 하나의 브랜치(고아 브랜치)를 갖고 있음
+
+* 커널 메타데이터를 포함하려면 커널 레시피에서 linux-yocto.inc 파일을 인클루드 해야 한다.
+  - linux-yocto.inc 파일은 내부적으로 kernel.bbclass, kernel-yocto.bbclass 클래스 파일을 상속한다.
+  - kernel-yocto.bbclass 내부에는 커널 메타데이터를 처리하는 부분이 존재함 (linux-yocto 스타일 레시피)
+
+* linux-yocto 스타일 레시피에는 2개의 필수 변수와 2개의 선택적인 변수가 있음
+  - KMACHINE (필수): 보통 MACHINE 변수와 같은 값을 갖지만 이것은 커널 혹은 커널 메타데이터와 연관성이 있는 반면, MACHINE 변수는 BSP 레이어에서 머신을 식별하는 데 사용한다.
+  - KBRANCH (필수): 리눅스 커널을 빌드하는 데 사용하는 리눅스 커널 소스 리포지터리 브랜치를 가리키고 있음
+  - KERNEL_FEATURES (선택): 기본적으로 BSP와 연관된 커널 메타데이터는 KMACHINE, LINUX_KERNEL_TYPE 변수를 통해 결정됨. 추가적인 커널 메타데이터가 필요할 때는 KERNEL_FEATURES 변수에 해당 커널 메타데이터를 할당한다.
+  - LINUX_KERNEL_TYPE (선택): 베이스 커널 브랜치에 따른 커널 유형을 정의한다. (standard, tiny, preempt-rt 타입이 존재함)
+
+* 커널 메타데이터는 3가지 기본 유형의 파일들로 구성되어 있다.
+  - scc description 파일 (.scc): Serial Configuration Control. 일련의 환경 설정을 제어하는 파일.
+    * define: 변수 정의
+    * kconf: 환경 설정 단편 파일(.cfg)을 적용하는 지시어
+    * patch: 패치 파일을 적용하는 지시어
+    * include: 또 다른 scc 파일을 인클루드하는 지시어
+  - 환경 설정 단편 파일 (.cfg)
+  - 패치 파일 (.patch)
+
+* 자세한 내용은 생략한다.
+  - 아직까지 주요 칩 벤더들은 Yocto를 사용한 리눅스 커널을 배포할 때 커널 레시피에서 kernel.bbclass 클래스 파일만을 상속해 배포한다.
+  - 다양한 보드와 아키텍처에 적합한 커스텀 리눅스 커널을 적용할 때 상당히 효율적으로 대체가 가능하다는 점에서 충분히 검토할 만한 내용이다.
 
 ## non linux-yocto 스타일 커널 레시피 구성
 
+* 이번 장에서는 www.kernel.org 사이트에서 배포된 바닐라 커널 소스를 포함하는 새로운 커널 레시피를 만든다.
+  - linux-yocto 스타일을 따르지 않는 방식이므로 non linux-yocto 스타일이라고 함
+  - linux-yocto.inc 파일을 커널 레시피 파일에서 인클루드하지 않음
+  - 즉 커널 메타데이터를 사용하지 않는다.
+
+* 커널 환경 설정 단편 파일과 커널 소스 내에 defconfig 파일을 사용하려면 kernel-yocto.bbclass 클래스 파일이 필요하다.
+  - 현재 주요 칩 벤더에서 배포되는 리눅스 커널은 non linux-yocto 스타일인 경우가 대부분이다.
+
+### 실습 순서
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout non_linux_yocto`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b non_linux_yocto`
+
+* 우리가 작성하고자 하는 커스텀 커널 레시피는 BSP 레이어에 포함되어 있어야 한다. BSP 레이어의 디렉토리 구성은 다음과 같다.
+  - defconfig과 linux-mykernel.bb 파일이 새로 추가됨
+
+```
+meta-great-bsp/
+|- conf
+|   |- layer.conf
+|   |- machine
+|       |- great.conf
+|- recipes-kernel
+    |- linux
+        |- file
+        |   |- 0001-Learning-yocto-add-new-kernel-driver.patch
+        |   |- defconfig
+        |   |- myscc.scc
+        |   |- new-kernel-driver.cfg
+        |- linux-mykernel.bb
+        |- linux-yocto_5.4.bbappend
+```
+
+* defconfig 파일 생성
+  - .config 파일 추출하기: `$ bitbake -c kernel_configme linux_yocto`
+  - 추출된 .config 파일의 위치는 다음과 같다: `~/poky_src/build2/tmp/work/great-poky-linux/linux-mykernel/5.4-rc8+gitAUTONIC+af42d3466b-r0/build/.config`
+  - 이 파일을 defconfig으로 rename하고 recipes-kernel/linux/file 디렉토리로 복사한다.
+
+* 새로운 커널 레시피 파일 생성
+  - 새로 작성되는 커널 레시피인 linux-mykernel.bb 파일은 다음과 같다.
+
+~/poky_src/poky/meta-great-bsp/recipes-kernel/linux/linux-mykernel.bb
+```
+DESCRIPTION = "Linux kernel from kernel.org git repository"
+SECTION = "kernel"
+LICENSE = "GPLv2"
+
+inherit kernel
+inherit kernel-yocto
+
+SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git;protocol=git;nocheckout=1"
+SRC_URI += "file://defconfig"
+
+SRCREV = "af42d3466bdc8f39806b26f593604fdc54140bcb"
+
+LIC_FILES_CHKSUM="file://COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
+
+LINUX_VERSION ?= "5.4-rc8"
+LINUX_VERSION_EXTENSION = "-mylinux"    # 커널 이미지 파일에 붙이는 접미어
+
+PROVIDES += "virtual/kernel"
+PV = "${LINUX_VERSION}+git${SRCPV}"    # 패키지 버전 넘버로 여기서는 리눅스 버전과 리비전 값이 할당됨
+COMPATIBLE_MACHINE = "great"
+
+FILESEXTRAPATHS_prepend := "${THISDIR}/file:"
+```
+
+* 새로 작성한 커널 레시피 파일을 설명하기 전에 사용하고자 하는 커널 소스를 미리 받아보도록 하자.
+  - 임시 디렉토리 내에서 다음과 같이 소스를 받아온다.
+  - `$ git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git`
+  - `$ git show v5.4-rc8` 명령어를 통해 특정 커밋의 리비전 hash 값을 얻을 수 있다. (SRCREV 변수 값)
+  - 만약 `SRCREV = "${AUTOREV}"`라고 하면 최신 리비전을 반영한다.
+
+* SRC_URI 변수에서 커널 소스를 가져올 수 있다. (fetch) 다음은 fetcher가 주로 사용하는 파라미터이다.
+  - branch: 체크아웃할 브랜치 이름. 지정하지 않으면 기본값으로 master를 설정한다. (Yocto kirkstone 버전에서는 필수로 입력해야 함)
+  - name: 브랜치를 가리키는 가명. SRC_URI에서 기술된 파일들의 checksum을 제공하는 데 주로 사용됨.
+  - tag: 특정 태그로 체크아웃하려고 할 때 사용됨. 별도로 추가하지 않으면 기본값으로 HEAD를 설정한다.
+  - nocheckout: 1로 설정하면 깃을 통해 가져온 소스를 unpacking할 때 체크아웃하지 않도록 한다. 기본값은 0이다.
+
+* 머신 환경 설정 파일 수정
+  - 새로 생성한 커널 레시피가 현재 사용 중인 머신에서 사용되도록 설정하려면 머신 환경 설정 파일에서 현재 다중으로 정의된 커널 레시피 중 특정 레시피를 선택하기 위해 PREFERRED_PROVIDER_virtual/kernel 변수에 사용하고자 하는 레시피 파일 이름을 넣으면 된다.
+
+~/poky_src/poky/meta-great-bsp/conf/machine/great.conf
+```
 ...
+WKS_FILE ?= "qemux86-directdisk.wks"
+
+do_image_wic[depends] += "syslinux:do_populate_sysroot syslinux-native:do_populate_sysroot mtools-native:do_populate_sysroot dosfstools-native:do_populate_sysroot"
+
+PREFERRED_PROVIDER_virtual/kernel = "linux-mykernel"
+
+# For runqemu
+QB_SYSTEM_NAME = "qemu-system-x86_64"
+```
+
+* 새로 만들어진 커널 레시피를 빌드하고 이미지를 다시 생성해 QEMU를 실행해본다.
+
+```
+$ bitbake linux-mykernel
+$ bitbake great-image -C rootfs
+$ runqemu great-image nographic
+```
+
+* QEMU 실행 후 로그인하고 커널이 반영되었는지 확인해 본다.
+
+```
+# uname -r
+5.4.0-rc8-mylinux
+```
 
 # 커널 레시피 확장
 
