@@ -2295,7 +2295,7 @@ $ bitbake -c kernel_configcheck -f virtual/kernel
 ## 커널 메타데이터
 
 ...
-d
+
 ## non linux-yocto 스타일 커널 레시피 구성
 
 ...
