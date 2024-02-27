@@ -2290,7 +2290,17 @@ $ bitbake -c kernel_configcheck -f virtual/kernel
 
 ## devshell을 이용한 코드 수정
 
-...
+* devshell: bitbake와 동일한 컨텍스트에서 실행되는 터미널 셸
+  - 소스 수정/빌드를 위한 도구
+  - devshell 실행 명령어: `$ bitbake <recipe name> -c devshell`
+  - 이처럼 devshell을 이용하면 특정 레시피 소스로 쉽게 이동할 수 있다.
+  - 경우에 따라서는 태스크 스크립트 '../temp/do.run_compile'을 실행하여 컴파일을 실행할 수도 있다. (가령 u-boot 패키지) 이는 devshell을 실행하면 빌드에 필요한 기본 환경 설정이 초기화되어 있기 때문이다.
+
+* 만약 커널 소스로 이동하고 싶으면 `$ bitbake virtual/kernel -c devshell`이라고 하면 된다.
+  - 레시피에 포함된 모든 패치가 적용된 커널 소스가 존재하는 디렉토리에서 터미널이 열린다.
+  - 열린 터미널에서 커널 코드를 수정하고 패치, 환경 설정 단편 파일을 생성한다.
+  - 작업을 마치고 devshell을 종료하고 커널 레시피에 방금 생성한 패치 및 환경 설정 단편 파일을 추가한다.
+  - bitbake 빌드를 진행하면 된다.
 
 ## 커널 메타데이터
 
