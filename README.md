@@ -2250,7 +2250,43 @@ obj-$(CONFIG_NEW_TEST_DRIVER) += new_test_driver.o
         |- linux-yocto_5.4.bbappend
 ```
 
-...
+* 커널 레시피 확장 파일(linux-yocto_5.4.bbappend) 내용을 다음과 같이 수정한다.
+
+~/poky_src/poky/meta-great-bsp/recipes-kernel/linux/linux-yocto_5.4.bbappend
+```
+SRC_URI += "file://new-kernel-driver.cfg \
+          file://0001-Learning-yocto-add-new-kernel-driver.patch \
+          "
+
+KBRANCH_great = "v5.4/standard/base"
+KMACHINE_great = "qemux86-64"
+SRCREV_machine_great = "35826e154ee014b64ccfa0d1f12d36b8f8a75939"
+COMPATIBLE_MACHINE_great = "great"
+LINUX_VERSION_great = "5.4.219"
+
+FILESEXTRAPATHS_prepend := "${THISDIR}/file:"
+```
+
+* 새로 만든 디바이스 드라이버가 정상적으로 동작하는지 확인한다. (fetch 태스크부터 실행해야 함)
+
+```
+$ bitbake virtual/kernel -C fetch
+$ bitbake great-image
+$ runqemu great-image nographic
+```
+
+* QEMU가 실행되면 로그인 후 신규 디바이스 드라이버가 정상적으로 실행됐는지 확인한다.
+
+```
+root@great:~# dmesg | grep "This is new"
+[커널 메시지 출력...]
+```
+
+* 참고: 다음은 추가된 환경 설정 단편 파일의 유효성 검사를 위한 명령어이다. (추가된 환경 설정 옵션이 최종 .config 파일에 생성되었는지 여부)
+
+```
+$ bitbake -c kernel_configcheck -f virtual/kernel
+```
 
 ## devshell을 이용한 코드 수정
 
@@ -2259,7 +2295,7 @@ obj-$(CONFIG_NEW_TEST_DRIVER) += new_test_driver.o
 ## 커널 메타데이터
 
 ...
-
+d
 ## non linux-yocto 스타일 커널 레시피 구성
 
 ...
