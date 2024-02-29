@@ -2447,6 +2447,66 @@ $ runqemu great-image nographic
 
 # 커널 레시피 확장
 
+* 깃을 이용해 외부로부터 커널 소스를 받아 빌드를 진행하는 방식은 커널 소스 수정이 번거롭고 수정된 소스 코드가 삭제될 우려가 있음
+  - 커널 소스를 로컬에 위치시키고 커널 빌드를 진행하면 이런 문제들을 해결할 수 있다.
+  - externalsrc 클래스 상속에 의해 구축된 로컬 커널 소스에서는 소스 내에서 defconfig 파일을 사용하는 것이 용이하다.
+  - externalsrc 클래스를 상속 받으면 빌드시 fetch부터 patch까지의 태스크를 건너뛰게 됨
+
+## externalsrc 클래스를 통한 로컬 커널 소스 사용
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout kernel_externalsrc`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b kernel_externalsrc`
+
+* 커널 소스 위치 찾기
+  - `~/poky_src$ bitbake-getvar -r great-image STAGING_KERNEL_DIR`
+  - 커널 소스의 위치는 STAGING_KERNEL_DIR 변수에 저장된다. ("/home/poky_src/build2/tmp/work-shared/great/kernel-source")
+
+* 커널 소스를 mykernel 디렉토리로 복사
+  - `~/poky_src/source/mykernel$ cp -a ~/poky_src/build2/tmp/work-shared/great/kernel-source/* .`
+
+* externalsrc 클래스를 사용해 커널 소스를 로컬로 지정하려면 레시피 파일을 수정해야 한다. 따라서 레시피 확장 파일을 새로 생성한다.
+
+예제의 전체적인 디렉토리 구조는 다음과 같다.
+```
+meta-great-bsp
+|- append
+|   |- linux-mykernel.bbappend
+|- conf
+|   |- layer.conf
+|   |- machine
+|       |- great.conf
+|- recipes-kernel
+    |- linux
+        |- file
+        |   |- 0001-Learning-yocto-add-new-kernel-driver.patch
+        |   |- defconfig
+        |   |- myscc.scc
+        |   |- new-kernel-driver.cfg
+        |- linux-mykernel.bb
+        |- linux-yocto_5.4.bbappend
+```
+
+~/poky_src/poky/meta-great-bsp/append/linux-mykernel.bbappend
+```
+inherit externalsrc
+EXTERNALSRC = "${COREBASE}/../source/mykernel/kernel-source"
+```
+
+* bitbake가 새로운 레시피 확장 파일을 인식할 수 있도록 layer.conf 파일의 BBFILES 변수에 추가된 레시피 확장 파일의 경로를 추가한다.
+
+~/poky_src/poky/meta-great-bsp/conf/layer.conf
+```
+BBPATH =. "${LAYERDIR}:"
+BBFILES += "${LAYERDIR}/recipes*/*/*.bb"
+BBFILES += "${LAYERDIR}/recipes*/*/*.bbappend"
+BBFILES += "${LAYERDIR}/append/*.bbappend"
+BBFILE_COLLECTIONS += "greatbsp"
+BBFILE_PATEERN_greatbsp = "^${LAYERDIR}/"
+BBFILE_PRIORITY_greatbsp = "6"
+LAYERSERIES_COMPAT_greatbsp = "${LAYERSERIES_COMPAT_core}"
+```
+
 ...
 
 # 배포 레이어 작성
