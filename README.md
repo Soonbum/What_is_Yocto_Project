@@ -2507,6 +2507,27 @@ BBFILE_PRIORITY_greatbsp = "6"
 LAYERSERIES_COMPAT_greatbsp = "${LAYERSERIES_COMPAT_core}"
 ```
 
+* 커널을 빌드한다.
+
+```
+$ bitbake linux-mykernel -c cleanall && bitbake linux-mykernel
+$ bitbake great-image -C rootfs
+```
+
+* 빌드 완료 후 기존에 externalsrc 클래스를 사용하기 전에 커널 소스가 존재했던 위치에 가면 소스 디렉토리가 심볼릭 링크로 되어 있는 것을 볼 수 있다.
+  - 심볼릭 링크는 현재 커널 소스가 위치한 로컬의 경로를 가리킴
+
+```
+~/poky_src/build2/tmp/work-shared/great$ ls -al
+kernel-source -> /home/poky_src/poky/../source/mykernel/kernel_source
+```
+
+## 커널 소스 내의 defconfig 파일 사용
+
+...
+
+## 커널 소스 밖에서 커널 모듈 생성
+
 ...
 
 # 배포 레이어 작성
