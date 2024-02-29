@@ -2532,6 +2532,23 @@ kernel-source -> /home/poky_src/poky/../source/mykernel/kernel_source
 
 # 배포 레이어 작성
 
+| 레이어 구조 |
+| ----------- |
+| 커스텀 레이어 (./meta-myproject) |
+| 배포 레이어 (./meta-great) |
+| BSP 레이어 (./meta-great-bsp) |
+| 포키 참조 배포 레이어 (./meta-poky) |
+| oe-core (./meta) |
+
+* 배포 레이어: 배포 전반에 대한 정책을 제공한다.
+  - BSP 레이어와 달리 배포 레이어는 배포 전반에 걸친 빌드에 대한 환경 설정을 갖고 있다.
+  - 툴체인, 패키지 형식, C 라이브러리, systemd와 같은 초기화 관리자 선택
+  - wifi, bluetooth와 같은 기능이 배포에 포함될지를 결정하기도 함
+  - <distribution layer>/distro/<distro name>.conf 레이어 파일이 존재한다. (배포 환경 설정 파일)
+
+* Yocto에서 참조로 만들어 놓은 배포 레이어: poky/meta-poky
+  - 배포 환경 설정 파일: poky/meta-poky/conf/distro/poky.conf (이 파일의 이름은 local.conf 파일의 DISTRO 변수에 정의되어 있음: `DISTRO ?= "poky"`)
+
 ...
 
 # 커스텀 레이어 작성
