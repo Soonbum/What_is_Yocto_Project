@@ -2524,9 +2524,81 @@ kernel-source -> /home/poky_src/poky/../source/mykernel/kernel_source
 
 ## 커널 소스 내의 defconfig 파일 사용
 
-...
+* 보통은 커널 소스 내에서 defconfig 파일을 제공하는 방식을 더 많이 사용한다. (트리 내 defconfig)
+  - 커널 소스 내에 위치하는 defconfig 파일을 사용하기 위해서는 kernel-yocto.bbclass 클래스 파일을 커널 레시피에서 상속해야 한다.
+  - 보통 defconfig 파일은 리눅스 커널 소스를 배포하는 쪽에서 함께 배포함
+  - 그러므로 이 방법이 커널 소스를 배포하는 배포자의 입장에서 관리하기 편함
+  - defconfig 파일은 커널 소스 내 'arch/<아키텍처>/configs/' 디렉토리에 위치함
+  - KBUILD_DEFCONFIG 변수에 사용하고자 하는 defconfig 파일 이름을 할당한다.
+
+### 실습 순서
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout internal_defconfig`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b internal_defconfig`
+
+* 기존에 사용하던 defconfig 파일을 커널 소스 내로 옮긴다.
+  - 기존 defconfig 파일 위치: `~/poky_src/poky/meta-great-bsp/recipes-kernel/linux/file/defconfig`
+  - x86 기반 QEMU 머신의 경우 defconfig이 저장되는 위치: `kernel-source/arch/x86/configs/my_defconfig` (파일명을 defconfig에서 my_defconfig으로 변경)
+
+* 마지막으로 ~/poky_src/poky/meta-great-bsp/recipes-kernel/linux/linux-mykernel.bb 파일을 수정하여 KBUILD_DEFCONFIG 변수에 my_defconfig을 할당한다.
+  ```
+  DESCRIPTION = "Linux kernel from kernel.org git repository"
+  SECTION = "kernel"
+  LICENSE = "GPLv2"
+
+  inherit kernel
+  inherit kernel-yocto
+
+  SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git;protocol=git;tag=v5.4-rc8"
+  # SRC_URI += "file://defconfig"
+  # SRC_URI += "file://0001-Learning-yocto-add-new-kernel-driver.patch"
+  # SRC_URI += "file://new-kernel-driver.cfg"
+
+  # SRCREV = "af42d3466bdc8f39806b26f593604fdc54140bcb"
+  KBUILD_DEFCONFIG = "my_defconfig"
+
+  LIC_FILES_CHKSUM = "file://COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
+
+  LINUX_VERSION ?= "5.4-rc8"
+  LINUX_VERSION_EXTENSION = "-mylinux"
+
+  PROVIDES += "virtual/kernel"
+
+  PV = "${LINUX_VERSION}+git${SRCPV}"
+  COMPATIBLE_MACHINE = "great"
+  FILESEXTRAPATHS_prepend := "${THISDIR}/file:"
+  ```
+
+* 앞에서 추가했던 커널 드라이버에 대한 커널 패치 및 커널 환경 설정 단편 파일은 이 예제에서는 추가할 수 없다.
+  - 이 예제는 externalsrc 클래스를 상속하므로 do_patch 태스크가 실행되지 않기 때문이다.
+  - '.scc' 파일을 사용하게 되면 패치 파일 반영에 do_patch 태스크가 필수이다.
+
+* 커널 빌드를 수행하고 이미지를 생성해 QEMU를 실행해 본다.
+
+* 빌드를 진행하고 QEMU를 실행해 보면 정상적으로 실행되는 것을 볼 수 있다.
+  ```
+  $ bitbake virtual/kernel -C fetch
+  $ bitbake great-image -C rootfs
+  $ runqemu great-image nographic
+  ```
 
 ## 커널 소스 밖에서 커널 모듈 생성
+
+* 본래부터 커널 소스 코드에서 제공하지 않는 디바이스 드라이버의 경우 커널 소스 밖에서 모듈을 빌드하도록 배포할 수 있다.
+
+* 다음과 같은 이유로 많은 디바이스 제공 업체가 이와 같은 방식으로 디바이스 드라이버 코드를 배포한다.
+  - 라이선스로 인한 비공개 모듈이 있는 경우
+  - 비필수 드라이버의 로딩을 연기해 부팅 시간을 줄이려는 경우
+  - 로드해야 하는 드라이버가 많아 정적으로 링크할 때 너무 많은 메모리를 사용할 경우
+
+* 커널 모듈을 커널 소스 밖에서 빌드하려면 module.bbclass 클래스 파일을 상속해야 한다.
+
+### 실습 순서
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout external_kernelmod`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b external_kernelmod`
 
 ...
 
