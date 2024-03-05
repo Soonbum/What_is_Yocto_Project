@@ -14,16 +14,16 @@
   - 사용자는 조리법에 해당하는 것만 작성하면 된다. [conf (환경 설정 파일), bb (레시피 파일), bbclass (클래스 파일), bbappend (레시피 확장 파일), inc (인클루드 파일)]
   - 재료 역할을 하는 meta 안에는 HW, SW에 대한 모든 정보가 들어 있다. (링크만 있음, 실질적인 정보는 다운로드해야 함)
   - bitbake가 알아서 조리법을 기반으로 결과물을 만들어준다.
-  - 결과물로 root file system image, kernel image, boot loader image가 나온다.
+  - 결과물로 루트 파일 시스템 이미지, 커널 이미지, 부트 로더 이미지가 나온다.
 
 * Yocto 프로젝트 작동 절차는 다음과 같다.
-  1. Poky reference system 준비 (download, 환경 설정)
-  2. target board에 맞는 BSP layer 생성
-  3. meta-layer 생성
-  4. recipe 토대로 download, patch, configure, build(compile, link)
-  5. install
-  6. package 생성
-  7. boot 이미지 생성
+  1. Poky 레퍼런스 시스템 준비 (download, 환경 설정)
+  2. 타깃 보드에 맞는 BSP 레이어 생성
+  3. 메타레이어(레시피) 생성
+  4. 레시피 토대로 다운로드, 패치(patch), 구성(configure), 빌드(컴파일 및 링크)
+  5. 설치(install)
+  6. 패키지 생성
+  7. 부트 이미지 생성
 
 ## 실습 환경
 
