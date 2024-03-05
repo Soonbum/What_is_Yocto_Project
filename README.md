@@ -2751,7 +2751,109 @@ $ runqemu great-image nographic
 
 ## MACHINE_EXTRA_RDEPENDS, MACHINE_ESSENTIAL_EXTRA_RDEPENDS 변수를 이용한 커널 모듈 설치
 
-...
+* IMAGE_INSTALL 변수에 커널 모듈을 생성하는 패키지 이름을 추가하는 방법보다는 MACHINE_EXTRA_RDEPENDS, MACHINE_ESSENTIAL_EXTRA_RDEPENDS 변수에 커널 모듈을 추가하는 방법을 더 선호한다.
+  - 커널 모듈 대부분이 하드웨어에 의존적이며, BSP 레이어에서 추가한 설치 파일이 이미지 레시피의 IMAGE_INSTALL에 들어가는 것이 모양상 좋지 않기 때문이다.
+  - MACHINE_EXTRA_RDEPENDS: packagegroup-base.bb 패키지 그룹 레시피 파일 기반으로 만들어진 레시피 파일에서 사용됨, 부팅시 필수적으로 사용되는 패키지가 아닐 때 사용됨
+  - MACHINE_ESSENTIAL_EXTRA_RDEPENDS: packagegroup-core-boot.bb 패키지 그룹 레시피 파일 기반으로 만들어진 이미지 레시피 파일에서 사용됨, 부팅시 필수적으로 사용되는 패키지일 때 사용됨
+
+### 실습 순서
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout external_kernelmod2`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b external_kernelmod2`
+
+* ~/poky_src/poky/meta-great/classes/great-base-image.bbclass 파일 수정
+  ```
+  inherit core-image
+
+  IMAGE_FSTYPES = " tar.bz2 ext4"
+  IMAGE_ROOTFS_SIZE = "10240"
+  IMAGE_ROOTFS_EXTRA_SPACE = "10240"
+  IMAGE_ROOTFS_ALIGNMENT = "1024"
+
+  CORE_IMAGE_BASE_INSTALL = "\
+     packagegroup-core-boot \    # 추가됨
+     packagegroup-base-extended \
+     ${CORE_IMAGE_EXTRA_INSTALL} \
+  "
+  ```
+
+* 기존 great-image.bb 레시피 파일에서 IMAGE_INSTALL 변수를 통해 추가한 커널 모듈을 주석 처리한다.
+
+~/poky_src/poky/meta-great/recipes-core/images/great-image.bb
+```
+SUMMARY = "A very small image for yocto test"
+
+inherit great-base-image
+LINGUAS_KO_KR = "ko-kr"
+LINGUAS_EN_US = "en-us"
+IMAGE_LINGUAS = "${LINGUAS_KO_KR} ${LINGUAS_EN_US}"
+IMAGE_INSTALL += "packagegroup-great"
+# IMAGE_INSTALL += "mykernelmod"
+IMAGE_OVERHEAD_FACTOR = "1.3"
+
+inherit extrausers
+EXTRA_USERS_PARAMS = "\
+  groupadd greatgroup; \
+  useradd -p `openssl passwd 9876` great; \
+  useradd -g greatgroup great; \
+  "
+```
+
+* 머신 환경 설정 파일 great.conf에서 제일 하단의 MACHINE_ESSENTIAL_EXTRA_RDEPENDS 변수에 새로 생성된 커널 모듈을 추가 할당한다.
+  ```
+  ...
+  PREFERRED_PROVIDER_virtual/kernel = "linux-mykernel"
+
+  #For runqemu
+  QB_SYSTEM_NAME = "qemu-system-x86_64"
+
+  MACHINE_ESSENTIAL_EXTRA_RDEPENDS += "kernel-module-mykernelmod"
+  ```
+
+* 커널 모듈을 만드는 레시피 파일에서 RPROVIDES 변수를 추가한다.
+
+~/poky_src/poky/meta-great-bsp/recipes-mykernelmod/mykernelmod.bb
+```
+SUMMARY = "Example of how to build an wxternal linux kernel module"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://COPYING;md5=ade99a31b7125f81bb82ffc454b3e6ac"
+
+inherit module
+SRC_URI = "file://Makefile \
+          file://mykernelmod.c \
+          file://COPYING \
+          "
+
+RPROVIDES_${PN} += "kernel-module-mykernelmod"    # 추가됨
+
+KERNEL_MODULE_AUTOLOAD += "mykernelmod"
+S = "${WORKDIR}"
+ALLOW_EMPTY_${PN} = "1"
+FILESEXTRAPATHS_prepend := "${THISDIR}/file:"
+```
+
+* 새롭게 커널 모듈을 빌드하고, 이미지를 생성해 QEMU로 실행해 본다.
+
+```
+$ bitbake mykernelmod -c cleanall && bitbake mykernelmod
+$ bitbake virtual/kernel && bitbake great-image -C rootfs
+$ runqemu great-image nographic
+```
+
+## 커널 모듈이 자동으로 실행되는 원리
+
+* 부팅시 커널 모듈을 로딩하려면 '/etc/module-load.d/' 디렉토리에 '<module name>.conf' 파일을 만들어야 한다.
+  - 파일 내용에 모듈 이름을 기록한다: `mykernelmod`
+ 
+* mykernelmod.conf의 위치는 다음과 같다: `~/poky_src/build6/tmp/work/great-great-linux/great-image/1.0-r0/rootfs/etc/modules_load.d`
+
+* 이는 systemd_modules-load.service를 통해 자동으로 로드되는 방법으로 systemd_modules-load.service가 활성화되어 있어야 한다.
+  - QEMU를 실행하고 `# systemctl status systemd-modules-load`를 실행하면 활성화 여부를 알 수 있다.
+  - 참고로 부팅시 로드될 커널 모듈의 리스트는 다음에 저장될 수 있다.
+      * /etc/modules-load.d/*.conf
+      * /run/modules-load.d/*.conf
+      * /usr/lib/modules-load.d/*.conf
 
 # 배포 레이어 작성
 
