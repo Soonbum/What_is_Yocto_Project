@@ -2874,7 +2874,168 @@ $ runqemu great-image nographic
 * Yocto에서 참조로 만들어 놓은 배포 레이어: poky/meta-poky
   - 배포 환경 설정 파일: poky/meta-poky/conf/distro/poky.conf (이 파일의 이름은 local.conf 파일의 DISTRO 변수에 정의되어 있음: `DISTRO ?= "poky"`)
 
-...
+* 어떤 툴체인을 사용할 것인지 여부는 배포 레이어가 결정하고 TCMODE 변수에 의해 설정된다.
+  - `~/poky_src/build$ bitbake-getvar -r great-image TCMODE`를 실행하면 `TCMODE="default"`임을 확인할 수 있다.
+  - TCMODE는 ToolChain Mode 혹은 Target Compiler Mode의 약어로, 타깃 장치에 따라 빌드 시스템이 사용하는 컴파일러의 종류와 동작 방식을 지정하는 변수이다.
+  - 툴체인은 tcmode-${TCMODE}.inc 파일에 포함되어 있으며, 전체 경로는 'poky/meta/conf/distro/include/tcmode-${TCMODE}.inc'이다.
+  - inc 파일 내부에는 PREFERRED_PROVIDER에 의해 선택된 레시피들을 볼 수 있는데, 툴체인을 컴파일하고 설치하는 방법에 대해 정의하고 있다.
+
+## 자신만의 배포 레이어 생성하기
+
+### 실습 순서
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout custom_distro`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b custom_distro`
+
+* 만들고자 하는 배포 레이어의 전체 구조는 다음과 같다.
+
+```
+~/poky_src/poky/meta-great
+|- classes
+|   |- great-base-image.bbclass
+|- conf
+|   |- distro
+|   |   |- great-distro.conf
+|   |- layer.conf
+|- recipes-core
+|   |- images
+|   |   |- core-image-minimal.bbappend
+|   |   |- great-image.bb
+|   |- packagegroups
+|       |- packagegroup-great.bb
+|- template
+    |- bblayers.conf.sample
+    |- conf-notes.txt
+    |- local.conf.sample
+```
+
+* 빌드 스크립트 buildenv.sh에서 DISTRO 변수 설정
+
+buildenv.sh 빌드 스크립트
+```
+# !/bin/bash
+function find_top_dir()
+{
+    local TOPDIR=poky
+# move into script file path
+    cd $(dirname ${BASH_SOURCE[0]})
+    if [ -d $TOPDIR ]; then
+        echo $(pwd)
+    else
+        while [ ! -d $TOPDIR ] && [ $(pwd) != "/" ];
+        do
+            cd ..
+        done
+        if [ -d $TOPDIR ]; then
+            echo $(pwd)
+        else
+            echo "/dev/null"
+        fi
+    fi
+}
+
+ROOT=$(find_top_dir)
+export TEMPLATECONF=${ROOT}/poky/meta-great/template/
+export MACHINE="great"
+export DISTRO="great-distro"    # 추가됨
+source poky/oe-init-build-env build2
+```
+
+* 배포 환경 설정 파일인 great-distro.conf 생성 (배포 설정 파일 poky.conf 파일을 이용함)
+
+great-distro.conf
+```
+DISTRO = "great-distro"    # 짦은 배포 이름
+DISTRO_NAME = "Great distro"    # 긴 배포 이름 (부팅시 콘솔 부트 프롬프트에 보여짐)
+DISTRO_VERSION = "3.1.21"    # 배포 버전 문자열
+DISTRO_CODENAME = "dunfell"    # Yocto 릴리즈 버전 코드네임
+SDK_VENDOR = "-greatsdk"    # SDK를 제공한 벤더 이름
+SDK_VERSION = "${@d.getVar('DISTRO_VERSION').replace('snapshot-${DATE}', 'snapshot')}"    # SDK 버전
+
+MAINTAINER = "Great <great@great.org>"    # 유지 보수 담당자 이름과 이메일
+TARGET_VENDOR = "-great"    # 타깃 공급 업체명
+LOCALCONF_VERSION = "1"
+
+DISTRO_VERSION[vardepsexclude] = "DATE"
+SDK_VERSION[vardepsexclude] = "DATE"
+# Override these in poky based distros
+
+GREAT_DEFAULT_DISTRO_FEATURES = "largefile opengl ptest multiarch wayland vulkan"
+GREAT_DEFAULT_EXTRA_RDEPENDS = "packagegroup-core-boot"
+GREAT_DEFAULT_EXTRA_RRECOMMENDS = "kernel-module-af-packet"
+DISTRO_FEATURES ?= "${DISTRO_FEATURES_DEFAULT} ${GREAT_DEFAULT_DISTRO_FEATURES}"    # 원하는 기능을 추가함 (아래 외에도 여러 가지가 있음)
+    # nfs: 클라이언트 지원 포함
+    # Opengl: Open Graphics Library 포함
+    # pci: PCI 버스 지원 포함
+    # pcmcia: PCMCIA/CompactFlash 지원 포함
+    # ppp: PPP 다이얼업 지원 포함
+    # ptest: 개발 레시피에서 지원되는 패키지 테스트를 빌드하도록 설정함
+    # smbfs: SMB 네트워크 클라이언트 지원 포함
+    # systemd: systemd init 관리자에 대한 지원 포함
+    # usbgadget: USB Gadget Device 지원 포함 (USB 네트워킹/시리얼/스토리지)
+    # usbhost: USB 호스트 지원 포함 (외부 키보드, 마우스, 스토리지, 네트워크 등)
+    # wayland: Wayland 디스플레이 서버 프로토콜과 해당 프로토콜을 지원하는 라이브러리 포함
+    # wifi: WiFi 지원 포함
+    # x11: X 서버와 라이브러리 포함
+
+PREFERRED_VERSION_linux-yocto ?= "5.4%"
+SDK_NAME = "${DISTRO}-${TCLIBC}-${SDKMACHINE}-${IMAGE_BASENAME}-${TUNE_PKGARCH}-${MACHINE}"
+SDKPATHINSTALL = "/opt/${DISTRO}/${SDK_VERSION}"
+DISTRO_EXTRA_RDEPENDS += " ${GREAT_DEFAULT_EXTRA_RDEPENDS}"    # 배포를 위한 실행 시간 의존성을 설정함
+DISTRO_EXTRA_RRECOMMENDS += " ${GREAT_DEFAULT_EXTRA_RRECOMMENDS}"    # 추가적인 기능 제공을 위해 추천되는 패키지를 할당함 (해당 패키지가 존재하지 않아도 빌드는 실패하지 않음)
+GREATQEMUDEPS = "${@bb.utils.contains("INCOMPATIBLE_LICENSE", "GPL-3.0", "", "packagegroup-core-device-devel",d)}"
+
+DISTRO_EXTRA_RDEPENDS_append_great = " ${GREATQEMUDEPS}"
+TCLIBCAPPEND = ""
+
+# QA check settings - a little stricter than the OE-Core defaults
+WARN_TO_ERROR_QA = "already-stripped compile-host-path install-host-path \
+                   installed-vs-shipped ldflags pn-overrides rpaths staticdev \
+                   unknown-configure-option useless-rpaths"
+
+WARN_QA_remove = ${WARN_TO_ERROR_QA}"
+ERROR_QA_append = ${WARN_TO_ERROR_QA}"
+
+require conf/distro/include/no-static-libs.inc
+require conf/distro/include/yocto-uninative.inc
+require conf/distro/include/security_flags.inc
+
+INHERIT += "uninative"
+INHERIT += "reproducible_build"
+BB_SIGNATURE_HANDLER ?= "OEEquivHash"    # bitbake가 사용하는 시그니처 핸들러 이름, 공유 상태 캐시에서 사용되는 시그니처와 스탬프 파일이 생성되고 처리되는 방식을 위해 사용됨
+BB_HASHSERVE ??= "auto"
+```
+
+* 새로 생성된 배포 레이어 반영을 위한 빌드 진행
+
+```
+$ bitbake great-image
+$ runqemu great-image nographic
+```
+
+* QEMU를 실행하면 다음과 같은 로그인 화면을 볼 수 있다.
+  - DISTRO_NAME 변수 값: Great distro
+  - 현재 사용 중인 욕토 버전: 3.1.21
+  - 머신 이름: great
+
+```
+Great distro 3.1.21 great ttyS0
+great login: _
+```
+
+## DISTRO_FEATURES, IMAGE_FEATURES, MACHINE_FEATURES의 차이점
+
+DISTRO_FEATURES | IMAGE_FEATURES | MACHINE_FEATURES
+---- | ---- | ----
+시스템 전체적인 정책 결정 | 배포되는 이미지에 포함되기를 원하는 소프트웨어 기능을 지정 | 머신이 지원할 수 있는 하드웨어 기능을 지정
+
+* 만약 MACHINE_FEATURES에만 wifi를 할당하고, DISTRO_FEATURES에 wifi를 할당하지 않으면?
+  - wifi에 해당하는 커널의 디바이스 드라이버는 준비되지만, wifi를 위해 필요한 미들웨어나 애플리케이션은 준비되지 않을 것이다.
+
+* 만약 DISTRO_FEATURES에만 wifi를 할당하고, MACHINE_FEATURES에 wifi를 할당하지 않으면?
+  - 커널의 디바이스 드라이버가 준비되지 않은 상태이기 때문에 wifi에 필요한 미들웨어나 애플리케이션은 설치되지 않는다.
+
 
 # 커스텀 레이어 작성
 
