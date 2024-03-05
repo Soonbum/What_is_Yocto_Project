@@ -3200,8 +3200,59 @@ $ runqemu great-image nographic
 
 # 패키지
 
-* 배포 및 설치를 위한 패키지는 대표적으로 다음 종류가 있다.
-  - RPM, DEB, IPK, TAR 등
+* 패키지: 타깃 시스템에 배포/설치를 위해 소프트웨어 바이너리, 라이브러리, 헤더 등을 하나의 묶음 파일로 만드는 절차
+  - 대부분의 소프트웨어 패키지는 인스톨러, 패키지 관리 시스템에 맞게 묶는다.
+  - 보통 리눅스 시스템은 단일 설치 패키지를 사용하기보다는 배포판에 포함된 패키지 관리 시스템을 이용한다.
+  - 패키지 관리 시스템의 예: RPM(Redhat Package Manager), dpkg(Debian Package), opkg(Open Package)
+
+## 빌드 과정에서의 패키지 태스크들
+
+* 패키지 챕터에서는 do_install 태스크 이후의 태스크들에 대해 학습할 것이다.
+
+* 빌드의 기본적인 설정들을 갖고 있는 local.conf 환경 설정 파일을 보면 기본적인 패키지 관리 시스템은 RPM으로 되어 있음을 확인할 수 있다.
+
+local.conf
+```
+PACKAGE_CLASSES ?= "package_rpm"
+```
+
+* 다음과 같이 bitbake 빌드 과정에서 각 태스크들은 태스크의 실행이 완료될 때마다 그 결과물을 특정 디렉토리에 저장한다.
+
+```
+                do_fetch
+                     |
+                     v
+                do_unpack
+                     |
+                     v
+                do_patch
+                     |
+                     v
+                do_prepare_recipe_sysroot
+                     |
+                     v
+                do_configure
+                     |
+                     v
+                do_compile
+                     |
+                     v
+                do_install
+                     |
+         ------------------------
+         |                      |
+         v                      v
+do_populate_sysroot       do_package
+                                |
+                                v
+                          do_packagedata
+                                |
+                                v
+                          do_package_write_rpm
+                                |
+                                v
+                          do_package_qa
+```
 
 ...
 
