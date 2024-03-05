@@ -2600,6 +2600,155 @@ kernel-source -> /home/poky_src/poky/../source/mykernel/kernel_source
   - 기존 GitHub에서 받은 소스: `$ git checkout external_kernelmod`
   - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b external_kernelmod`
 
+```
+~/poky_src/poky/meta-great-bsp/
+|- append
+|   |- linux-mykernel.bbappend
+|- conf
+|   |- layer.conf
+|   |- machine
+|       |- great.conf
+|- recipes-kernel
+|   |- linux
+|       |- file
+|       |   |- 0001-Learning-yocto-add-new-kernel-driver.patch
+|       |   |- defconfig
+|       |   |- myscc.scc
+|       |   |- new-kernel-driver.cfg
+|       |- linux-mykernel.bb
+|       |- linux-yocto_5.4.bbappend
+|- recipes-mykernelmod
+    |- file
+    |   |- COPYING
+    |   |- Makefile
+    |   |- mykernelmod.c
+    |- mykernelmod.bb
+```
+
+* layer.conf 수정
+  - 새로 생성된 레시피 파일을 bitbake가 인식할 수 있도록 함
+
+~/poky_src/poky/meta-great-bsp/conf/layer.conf
+```
+BBPATH =. "${LAYERDIR}:"
+BBFILES += "${LAYERDIR}/recipes*/*/*.bb"
+BBFILES += "${LAYERDIR}/recipes*/*/*.bbappend"
+BBFILES += "${LAYERDIR}/append/*.bbappend"
+BBFILES += "${LAYERDIR}/recipes*/*.bb"    # 추가됨
+BBFILE_COLLECTIONS += "greatbsp"
+BBFILE_PATTERN_greatbsp = "^${LAYERDIR}/"
+BBFILE_PRIORITY_greatbsp = "6"
+LAYERSERIES_COMPAT_greatbsp = "${LAYERSERIES_COMPAT_core}"
+```
+
+* COPYING 파일 생성
+  - 모든 레시피 파일들을 레시피가 빌드하는 소프트웨어 패키지에 적용되는 소스 라이선스 목록을 LICENSE 변수에 할당해야 함
+  - 라이선스 유효성 검증을 위해 LIC_FILES_CHKSUM 변수도 설정할 것
+
+~/poky_src/poky/meta-great-bsp/recipes-mykernelmod/file/COPYING
+```
+This is my kernel module example file.
+This file is for checksum.
+Bye!
+```
+
+* mykernelmod.c 파일 생성
+
+~/poky_src/poky/meta-great-bsp/recipes-mykernelmod/file/mykernelmod.c
+```
+#include <linux/module.h>
+int init_module(void)
+{
+    printk("hello kernel module! \n");
+    printk("hello kernel module! \n");
+    printk("hello kernel module! \n");
+    printk("hello kernel module! \n");
+    printk("hello kernel module! \n");
+    return 0;
+}
+
+void cleanup_module(void)
+{
+    printk("Goodbye kernel module!\n");
+}
+
+MODULE_LICENSE("MIT");
+```
+
+* Makefile 생성
+  - 파라미터 M: 커널 소스 밖에서 모듈이 빌드된다는 것을 의미함
+  - 코드 내에 탭 대신 스케이스가 들어가면 오류가 발생함 ('missing separator.  Stop.')
+
+~/poky_src/poky/meta-great-bsp/recipes-mykernelmod/file/Makefile
+```
+obj-m := mykernelmod.o
+SRC := $(shell pwd)
+all:
+  $(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules
+modules_install:
+  $(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules_install
+clean:
+  rm -rf *.o
+  rm -f Module.markers Module.symvers modules.order
+  rm -rf .tmp_versions Modules.symbers
+```
+
+* 커널 모듈을 추가하는 레시피 파일 mykernelmod.bb
+
+~/poky_src/poky/meta-great-bsp/recipes-mykernelmod/mykernelmod.bb
+```
+SUMMARY = "example of how to build an external linux kernel module"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://COPYING;md5=ade99a31b7125f81bb82ffc454b3e6ac"
+
+inherit module    # 커널 모듈 사용을 위해 상속 받아야 하는 클래스 파일이며 모듈을 컴파일하고 자동 실행하게 하는 등의 작업을 손쉽게 할 수 있음
+SRC_URI = "file://Makefile \
+          file://mykernelmod.c \
+          file://COPYING \
+          "
+KERNEL_MODULE_AUTOLOAD += "mykernelmod"    # 부팅시 커널 모듈이 자동으로 로드되도록 함
+S = "${WORKDIR}"
+ALLOW_EMPTY_${PN} = "1"    # 따로 패키지를 만들지 않아 오류가 발생할 수 있으므로 이와 같이 처리함
+FILESEXTRAPATHS_prepend := "${THISDIR}/file:"
+```
+
+* 만든 커널 모듈 파일을 루트 파일 시스템에 저장
+  - 빌드를 통해 만들어진 커널 모듈(.ko)을 루트 파일 시스템에 저장하고, 저장된 커널 모듈이 부팅시 systemd에 의해 자동으로 실행되도록 KERNEL_MODULE_AUTOLOAD 변수에 커널 모듈의 이름을 할당함
+  - 루트 파일 시스템 이미지를 생성하는 레시피 파일은 great-image.bb이므로 생성된 커널 모듈 패키지를 이미지 레시피의 IMAGE_INSTALL 변수에 추가함
+
+~/poky_src/poky/meta-great/recipes-core/images/great-image.bb
+```
+SUMMARY = "A very small image for yocto test"
+
+inherit great-base-image
+
+LINGUAS_KO_KR = "ko-kr"
+LINGUAS_EN_US = "en-us"
+
+IMAGE_LINGUAS = "${LINGUAS_KO_KR} ${LINGUAS_EN_US}"
+IMAGE_INSTALL += "packagegroup-great"
+IMAGE_INSTALL += "mykernelmod"
+
+IMAGE_OVERHEAD_FACTOR = "1.3"
+
+inherit extrausers
+EXTRA_USERS_PARAMS = "\
+  groupadd greatgroup; \
+  useradd -p `openssl passwd 9876` great; \
+  useradd -g greatgroup great; \
+  "
+```
+
+* 새로 생성된 커널 모듈 레시피를 빌드하고, 최종 이미지를 만들어 QEMU에서 실행한다.
+
+```
+$ bitbake mykernelmod
+$ bitbake great-image -C rootfs
+$ runqemu great-image nographic
+```
+
+## MACHINE_EXTRA_RDEPENDS, MACHINE_ESSENTIAL_EXTRA_RDEPENDS 변수를 이용한 커널 모듈 설치
+
 ...
 
 # 배포 레이어 작성
