@@ -3039,7 +3039,164 @@ DISTRO_FEATURES | IMAGE_FEATURES | MACHINE_FEATURES
 
 # 커스텀 레이어 작성
 
-...
+| 레이어 구조 |
+| ----------- |
+| 커스텀 레이어 (./meta-myproject) |
+| 배포 레이어 (./meta-great) |
+| BSP 레이어 (./meta-great-bsp) |
+| 포키 참조 배포 레이어 (./meta-poky) |
+| oe-core (./meta) |
+
+* BSP, 배포 레이어는 칩을 제공하는 벤더에서 배포하므로 처음부터 만들 필요는 거의 없다.
+
+* 실제로 추가/수정해야 하는 레이어는 커스텀 레이어가 될 것이다.
+  - 생성한 애플리케이션이나 필요에 따라 커널이나 부트로더를 수정할 수 있고, 새로 추가되는 기능을 위해 배포 정책을 수정할 수도 있다.
+  - Yocto는 기존의 메타데이터들을 수정하기보다는 새롭게 레이어를 만들어 추가/수정하도록 권고한다.
+  - 레시피 확장 파일(.bbappend)을 사용해 추가/수정해야 한다.
+
+### 실습 순서
+
+* meta-myproject 레이어를 만들 것이다.
+  - 애플리케이션을 위해 만든 기존 meta-hello, meta-nano-editor 레이어를 삭제하고 meta-myproject 레이어에 합칠 것이다.
+  - 다음과 같이 레이어를 생성할 것이다.
+
+```
+~/poky_src/poky/meta-myproject
+|- appends
+|   |- nano_6.0.bbappend
+|- conf
+|   |- layer.conf
+|- recipes-core
+|   |- images
+|   |   |- great-image.bbappend
+|   |- packagegroups
+|       |- packagegroup-great.bb
+|- recipes-hello
+|   |- hello.bb
+|   |- source
+|       |- COPYING
+|       |- hello.c
+|       |- hello.service
+|- recipes-nano
+    |- nano_6.0.bb
+```
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout customer_layer`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b customer_layer`
+
+* poky 디렉토리에 meta-myproject 디렉토리를 새로 생성한다.
+
+* meta-myproject 디렉토리에 conf 디렉토리를 만들고, conf 디렉토리에 layer.conf 파일을 생성한다.
+
+layer.conf
+```
+BBPATH =. "${LAYERDIR}:"    # LAYERDIR 변수가 갖는 값은 레이어 최상위 디렉토리인 meta-myproject이다.
+BBFILES += "${LAYERDIR}/recipes*/*.bb \    # reecipes-hello/hello.bb와 recipes-nano/nano6.0.bb 파일을 bitbake가 인식할 수 있도록 추가한 경로이다.
+           ${LAYERDIR}/recipes*/*/*.bb \    # recipes-core/packagegroups/packagegroup-great.bb 파일을 bitbake가 인식할 수 있도록 추가한 경로이다.
+           ${LAYERDIR}/recipes*/*/*.bbappend \    # recipes-core/images/great-image.bbappend 파일을 bitbake가 인식할 수 있도록 추가한 경로이다.
+           ${LAYERDIR}/appends*/*.bbappend \    # appends/nano_6.0.bbappend 파일을 bitbake가 인식할 수 있도록 추가한 경로이다.
+           "
+
+BBFILE_COLLECTIONS += "myproject"
+BBFILE_PATTERN_myproject = "^${LAYERDIR}/"
+BBFILE_PRIORITY_myproject = "12"    # meta-myproject 레이어가 최상위 레이어가 되도록 가장 큰 우선순위인 12로 설정한다.
+LAYERSERIES_COMPAT_myproject = "${LAYERSERIES_COMPAT_core}"
+```
+
+* 기존의 meta-hello 레이어에서 recipes-hello 디렉토리를 meta-myproject 디렉토리 아래로 이동시키고 meta-hello 디렉토리를 삭제한다.
+
+* 기존의 meta-nano-editor 레이어에서 recipes-nano, appends 디렉토리를 meta-myproject 디렉토리 아래로 이동시키고 meta-nano-editor 디렉토리를 삭제한다.
+
+* meta-myproject 디렉토리에 recipes-core 디렉토리를 만들고 meta-great/recipes-core 디렉토리에 있는 packagegroups 디렉토리를 meta-myprject/recipes-core 디렉토리로 이동시킨다. 그리고 기존의 meta-great 디렉토리에 존재하는 recipes-core/packagegroups 디렉토리를 삭제한다.
+
+* meta-myproject/recipes-core 디렉토리에 images 디렉토리를 만들고, 레시피 확장 파일인 great-image.bbappend 파일을 생성한 후 다음 내용을 입력한다.
+  - `IMAGE_INSTALL += "packagegroup-great"`
+
+* 위에 내용이 추가된 이유로 meta-great/recipes-core/images/great-image.bb 파일을 다음과 같이 수정한다.
+  ```
+  SUMMARY = "A very small image for yocto test"
+  inherit great-base-image
+  LINGUAS_KO_KR = "ko-kr"
+  LINGUAS_EN_US = "en-us"
+  IMAGE_LINGUAS = "${LINGUAS_KO_KR} ${LINGUAS_EN_US}"
+  # IMAGE_INSTALL += "packagegroup-great"
+  IMAGE_OVERHEAD_FACTOR = "1.3"
+  ...
+  ```
+
+* 기존에 존재하던 meta-hello, meta-nano-editor 레이어가 삭제되었으므로 bblayers.conf.sample 파일에서 추가된 이 레이어들도 삭제되어야 한다.
+
+~/poky_src/poky/meta-great/template/bblayers.conf.sample
+```
+POKY_BBLAYERS_CONF_VERSION = "2"
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+BBLAYERS ?= " \
+  ##OEROOT##/meta \
+  ##OEROOT##/meta-poky \
+  ##OEROOT##/meta-yocto-bsp \
+  ##OEROOT##/meta-great \
+  ##OEROOT##/meta-great-bsp \
+"
+```
+
+* 이제 meta-myproject 레이어를 추가해야 한다. 레이어 파일을 생성하는 방법도 있지만 다음과 같이 빌드 스크립트를 통해 자동으로 추가할 수도 있다.
+  - `bitbake-layers add-layer` 명령어: bblayers.conf파일에 새롭게 추가된 레이어를 자동으로 추가해 주는 명령어
+
+~/poky_src/buildenv.sh
+```
+# !/bin/bash
+
+function find_top_dir()
+{
+    local TOPDIR=poky
+# move into script file path
+    cd $(dirname ${BASH_SOURCE[0]})
+    if [ -d $TOPDIR ]; then
+        echo $(pwd)
+    else
+        while [ ! -d $TOPDIR ] && [ $(pwd) != "/" ];
+        do
+            cd ..
+        done
+
+        if [ -d $TOPDIR ]; then
+            echo $(pwd)
+        else
+            echo "/dev/null"
+        fi
+    fi
+}
+
+ROOT=$(find_top_dir)
+export TEMPLATECONF=${ROOT}/poky/meta-great/template/
+export MACHINE="great"
+export DISTRO="great-distro"
+function build_target() {
+    source poky/oe-init-build-env build2
+    bitbake-layers add-layer ../poky/meta-myproject
+}
+
+build_target
+```
+
+* bblayers.conf.sample 파일을 수정했으므로 build/conf/bblayers.conf 파일을 업데이트해야 한다.
+  - build2/conf 디렉토리를 삭제하고 빌드 초기화 스크립트 buildenv.sh 스크립트를 실행한다.
+
+```
+~/poky_src$ rm -rf build2/conf
+~/poky_src$ source buildenv.sh
+```
+
+* 이제 build2/conf/bblayers.conf 파일을 열어보면 meta-myproject 디렉토리가 BBLAYERS에 추가된 것을 확인할 수 있다.
+
+* 빌드를 다시 진행하고 QEMU를 실행해 본다.
+
+```
+$ bitbake great-image
+$ runqemu great-image nographic
+```
 
 # 패키지
 
