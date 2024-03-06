@@ -3333,11 +3333,9 @@ do_populate_sysroot       do_package
   - do_package 태스크가 생성한 패키지 메타데이터를 전역적으로 사용할 수 있도록 ${TMPDIR}/pkgdata/${MACHINE} 디렉토리로 복사한다.
   - 이전 태스크들까지는 태스크 산출물들이 ${WORKDIR}에 있었지만, do_packagedata 태스크부터는 태스크의 산출물이 전역적으로 사용될 수 있도록 상위 디렉토리에 저장된다. (예: build/tmp/pkgdata/great/)
 
-### do_package 태스크
-
-...
-
 ### do_package_write_rpm 태스크
+
+* do_package_write_rpm 태스크: RPM 패키지를 생성하고, 생성된 패키지를 ${TMPDIR}/deploy/rpm 디렉토리(Package Feed)에 위치시킨다.
 
 ...
 
