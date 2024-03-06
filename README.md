@@ -3306,11 +3306,32 @@ do_populate_sysroot       do_package
 
 ### do_package 태스크
 
-...
+* do_package 태스크: 이미 빌드된 소프트웨어나 라이브러리를 패키지로 묶어서 설치 가능한 형태로 만드는 작업을 수행한다.
+  - do_install 태스크에 의해 생성된 산출물 디렉토리 ${D}를 PKGD 변수가 가리키는 디렉토리로 복사한다. PKGD 변수는 ${WORKDIR}/package 디렉토리를 가리킨다.
+  - ${WORKDIR}/package 디렉토리의 파일들은 PKGDEST 변수에서 지정한 디렉토리로 복사된다. PKGDEST 변수는 ${WORKDIR}/packages-split 디렉토리를 가리킨다. ($FILES_{PN}-<name> 디렉토리에 $FILES_{PN}-<name> 변수에 할당된 파일들이 복사됨)
+  - PKGDESTWORK 변수에서 지정한 디렉토리인 ${WORKDIR}/pkgdata에 패키지 메타데이터를 저장한다.
+
+* 예시) FILES 변수와 PACKAGES 변수는 다음과 같이 매칭된다.
+  FILES 변수 | PACKAGES 변수 | packages_split 디렉토리
+  ---------- | ------------ | -------------------------
+  FILES_${PN} | ${PN} | hello
+  FILES_${PN}-dbg | ${PN}-dbg | hello-dbg
+  FILES_${PN}-staticdev | ${PN}-staticdev | hello-staticdev
+  FILES_${PN}-dev | ${PN}-dev | hello-dev
+  ... | ... | ...
+
+* 빌드 결과물은 각자의 선택에 따라 서로 다른 패키지로 만들어질 수 있다. (Package Splitting)
+  - 이렇게 하면 하나의 레시피 파일에서 다수의 패키지를 만들 수 있다.
+  - 만들어진 패키지들 중 일부만 타깃 장치의 루트 파일 시스템에 설치한다.
+  - 필요한 결과물만 설치해 최종 이미지의 크기를 줄이고, 장치 보안에 위해를 줄 수 있는 바이너리, 라이브러리, 디버그 정보 등을 설치하지 않도록 할 수 있다.
+  - package-split 디렉토리 내 파일들은 패키지를 만들 수 있는 패키지 메타데이터로 변경된다.
 
 ### do_packagedata 태스크
 
-...
+* do_packagedata 태스크: do_package 태스크가 생성한 패키지와 관련된 데이터를 생성하고 저장하는 작업을 수행한다.
+  - 패키지 메타데이터를 사용해 패키지가 설치될 경로, 라이브러리 및 실행 파일의 의존성 정보, 설정 파일을 정의한다.
+  - do_package 태스크가 생성한 패키지 메타데이터를 전역적으로 사용할 수 있도록 ${TMPDIR}/pkgdata/${MACHINE} 디렉토리로 복사한다.
+  - 이전 태스크들까지는 태스크 산출물들이 ${WORKDIR}에 있었지만, do_packagedata 태스크부터는 태스크의 산출물이 전역적으로 사용될 수 있도록 상위 디렉토리에 저장된다. (예: build/tmp/pkgdata/great/)
 
 ### do_package 태스크
 
