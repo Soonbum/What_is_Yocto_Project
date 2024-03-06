@@ -3265,6 +3265,79 @@ do_populate_sysroot       do_package
                           do_package_qa
 ```
 
+* poky/meta/conf/bitbake.conf의 변수 PACKAGES, FILES 변수에 대해 이해할 필요가 있다.
+  - PACKAGES: 레시피가 생성하는 패키지 리스트들의 목록. 공백으로 분류되며 기본값은 다음과 같다. 왼쪽부터 먼저 처리된다.
+    `PACKAGES = "${PN}-src ${PN}-dbg ${PN}-staticdev ${PN}-dev ${PN}-doc ${PN}-locale ${PACKAGE_BEFORE_PN} ${PN}"`
+  - FILES: 특정 패키지에 들어가는 디렉토리와 파일의 목록을 정의한다. 기본값은 다음과 같다.
+    ```
+    FILES_${PN} = "${bindir}/* ${sbindir}/* ${libexecdir}/* ${libdir}/lib*S{SOLIBS} \
+                ${sysconfdir} ${sharedstatedir} ${localstatedir} \
+                ${base_bindir}/* ${base_sbindir}/* \
+                ${base_libdir}/*${SOLIBS} \
+                ${base_prefix}/lib/udev ${prefix}/lib/udev \
+                ${base_libdir}/udev ${libdir}/udev \
+                ${datadir}/${BPN} ${libdir}/${BPN}/* \
+                ${datadir}/idl ${datadir}/omf ${datadir}/sounds \
+                ${libdir}/bonobo/servers"
+
+    FILES_${PN}-bin = "${bindir}/* ${sbindir}/*"
+
+    FILES_${PN}-doc = "${docdir} ${mandir} ${infodir} ${datadir}/gtk-doc \
+                ${datadir}/gnome/help"
+    SECTION_${PN}-doc = "doc"
+
+    FILES_SOLIBSDEV ?= "${base_libdir}/lib*${SOLIBSDEV} ${libdir}/lib*${SOLIBSDEV}"
+    FILES_${PN}-dev = "${includedir} ${FILES_SOLIBSDEV} ${libdir}/*.la \
+                    ${libdir}/*.o ${libdir}/pkgconfig ${datadir}/pkgconfig \
+                    ${datadir}/aclocal ${base_libdir}/*.o \
+                    ${libdir}/${BPN}/*.la ${base_libdir}/*.la \
+                    ${libdir}/cmake ${datadir}/cmake"
+    SECTION_${PN}-dev = "devel"
+    ALLOW_EMPTY_${PN}-dev = "1"
+    RDEPENDS_${PN}-dev = "${PN} (= ${EXTENDPKGV})"
+
+    FILES_${PN}-staticdev = "${libdir}/*.a ${base_libdir}/*.a ${libdir}/${BPN/*.a"
+    SECTION_${PN}-staticdev = "devel"
+    RDEPENDS_${PN}-staticdev = "${PN}-dev (= ${EXTENDPKGV})"
+
+    FILES_${PN}-dbg = "/usr/lib/debug /usr/lib/debug-static /usr/src/debug"
+    ...
+    ```
+
+### do_package 태스크
+
+...
+
+### do_packagedata 태스크
+
+...
+
+### do_package 태스크
+
+...
+
+### do_package_write_rpm 태스크
+
+...
+
+### do_package_qa 태스크
+
+...
+
+## RPM 패키지
+
+...
+
+## yum
+
+...
+
+## 실습 순서
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout makelib`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b makelib`
+
 ...
 
 # 패키지 설치를 위한 태스크
