@@ -3336,12 +3336,35 @@ do_populate_sysroot       do_package
 ### do_package_write_rpm 태스크
 
 * do_package_write_rpm 태스크: RPM 패키지를 생성하고, 생성된 패키지를 ${TMPDIR}/deploy/rpm 디렉토리(Package Feed)에 위치시킨다.
-
-...
+  - 만약 커스텀 패키지 생성을 위해 PACKAGES 변수에 포함되지 않은 패키지가 필요할 경우, PACKAGE_BEFORE_PN 변수를 사용한다. (${PN} 패키지 생성 직전에 삽입됨)
 
 ### do_package_qa 태스크
 
-...
+* do_package_qa 태스크: RPM 패키지들에 대해 품질 보증 확인을 한다. 이 태스크는 패키지가 빌드되고 생성된 후에 실행되며, 패키지에 대한 다양한 품질 검증 도구를 사용해 문제를 찾고 보고한다.
+  - 패키지의 파일 누락, 라이브러리 의존성 오류, 중복 파일, 빈 디렉토리 등을 확인하고 경고/오류 메시지를 출력한다.
+  - insane.bbclass 클래스: 패키지 생성 프로세스에서 생성된 패키지들에 대한 품질 보증 검사를 실시한다.
+
+* 만약 레시피 파일에서 하나 이상의 검사를 건너뛰고 싶다면 INSANE_SKIP 변수를 사용하면 된다. (예: `INSANE_SKIP_${PN} += "dev-so"`의 경우 심볼릭 링크 .so 파일에 대한 검사를 건너뜀)
+
+* 다음은 QA 검사 목록의 일부이며 자세한 것은 [여기](https://docs.yoctoproject.org/ref-manual/classes.html#insane-bbclass)를 확인한다.
+
+  변수명 | 테스트 설명
+  ----------------- | -------------------------
+  already-stripped | 생성된 실행 파일이 빌드 시스템에 의해 디버그 심볼이 추출되기 전에 이미 스트립됐는지 확인한다.
+  arch | 실행 가능하고 링크 가능한 형식(ELF)의 종류, 비트 크기 및 엔디언을 확인해 이를 대상 아키텍처와 일치하는지 확인한다. (부트로더의 경우 우회해야 할 수도 있음)
+  buildpaths | 출력 파일 내에서 빌드 호스트의 경로를 확인한다. (노출되면 보안 문제 발생 가능)
+  build-deps | DEPENDS, 명시적인 RDEPENDS, 또는 태스크 수준의 의존성을 통해 지정된 빌드 시간 의존성이 실행 시간 의존성과 일치하는지를 결정한다.
+  compile-host-path | do_compile 로그를 확인해 빌드 호스트의 경로가 사용됐는지를 확인한다. (노출되면 보안 문제 발생 가능)
+  debug-deps | -dbg 패키지를 제외한 모든 패키지가 -dbg 패키지에 의존하는지 확인한다. (의존하면 패키징 버그 발생 가능)
+  debug-files | -dbg 패키지 이외의 패키지에 .debug 디렉토리가 있는지를 확인한다. (있으면 패키징 오류)
+  ... | ...
+
+* 빈 패키지를 생성할 경우 QA 오류가 발생하는데, 빈 패키지를 허용하려면 다음과 같은 지시어를 추가해야 한다.
+  ```
+  ALLOW_EMPTY_${PN} = "1"
+  ALLOW_EMPTY_${PN}-dev = "1"
+  ALLOW_EMPTY_${PN}-staticdev = "1"
+  ```
 
 ## RPM 패키지
 
