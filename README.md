@@ -3639,6 +3639,45 @@ $ runqemu great-image nographic
 
 ### 개선된 라이브러리 생성 패키지 실습
 
+* 앞에서 "라이브러리 생성을 통한 패키지 실습"을 할 때 라이브러리 파일(libtest.so)과 헤더 파일(func.h)을 수작업으로 복사했었다.
+  - Yocto에서는 빌드 시간 의존성 방법을 이용해 수작업으로 라이브러리를 복사할 필요가 없다.
+  - RDEPENDS, RPROVIDES 변수는 실행 시간 의존성을 나타낸다.
+  - makelib 레시피의 라이브러리가 생성되기 전에 uselib 레시피의 do_compile 태스크를 실행한다고 할 때, libtest.so 파일이 존재하지 않으므로 실패한다.
+  - 즉, uselib 레시피 빌드를 위해 makelib 레시피 빌드를 먼저 마쳐야 하므로 DEPENDS, PROVIDES 변수를 사용해야 한다.
+
+* bitbake는 각각의 레시피를 빌드하면서 빌드 작업 디렉토리 아래 recipe-sysroot 디렉토리를 만들고, 컴파일/링크시 필요한 헤더, 라이브러리 파일을 여기서 찾는다.
+  - recipe-sysroot: bitbake가 레시피를 빌드하는 중에 do_prepare_recipe_sysroot 태스크에서 만들어진다. 레시피에서 DEPENDS 변수에 의해 지정된 다른 레시피의 결과물을 recipe-sysroot로 복사해온다.
+
+    ```
+    <uselib 레시피>                       <makelib 레시피>
+    do_fetch                            do_fetch
+       |                                   |
+       v                                   v
+    do_unpack                           do_unpack
+       |                                   |
+       v                                   v
+    do_patch                            do_patch
+       |                                   |
+       v                                   v
+    do_prepare_recipe_sysroot  <--      do_prepare_recipe_sysroot
+       |                         |         |
+       v                         |         v
+    do_configure                 |      do_configure
+       |                         |         |
+       v                         |         v
+    do_compile                   |      do_compile
+       |                         |         |
+       v                         |         v
+    do_install                   |      do_install
+                                 |          |
+                                 |          v
+                                 -----  do_populate_sysroot
+    ```
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout improved_makelib`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b improved_makelib`
+
 ...
 
 # 패키지 설치를 위한 태스크
