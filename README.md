@@ -3366,19 +3366,278 @@ do_populate_sysroot       do_package
   ALLOW_EMPTY_${PN}-staticdev = "1"
   ```
 
-## RPM 패키지
+## 패키지 관리 도구
 
-...
+* RPM(RedHat Package Manager): 레드햇 계열의 리눅스 배포판에서 사용하는 패키지 관리 도구.
+  - 초기에는 모든 패키지를 tar, gzip으로 묶은 소스 파일을 직접 컴파일하고 수동으로 설치했다.
+  - 수동 설치의 문제점: 번거롭고, 의존성이 있는 모듈을 따로 설치해 주어야 하므로 많은 시간과 노력이 소요된다.
+  - RPM은 자동 설치가 되지만 여전히 의존 패키지까지 자동으로 설치되지 않았기 때문에 yum이 등장하게 되었다.
 
-## yum
+* yum(Yellowdog Update Modified): 레드햇 계열의 리눅스 배포판에서 사용하는 패키지 관리 도구. RPM 명령어가 해결하지 못했던 패키지 의존성 문제를 해결했다.
+  - yum 명령어를 사용하면 패키지 의존성 문제를 자동으로 처리하면서 설치/업데이트/삭제를 진행할 수 있다.
 
-...
+* bitbake dunfell에서는 yum 개선 버전인 dnf(Dandified YUM)를 패키지 관리 도구로 사용하고 있다.
+  - 느린 속도, 과다한 메모리 사용, 의존성 결정이 느린 단점을 개선한 새로운 패키지 관리 도구이다.
 
-## 실습 순서
+### 라이브러리 생성을 통한 패키지 실습
 
 * 관련 소스 다운로드 방법
   - 기존 GitHub에서 받은 소스: `$ git checkout makelib`
   - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b makelib`
+
+* 공유 라이브러리(동적 라이브러리)를 만들어 본다.
+  - 공유 라이브러리를 만드는 레시피와 소스는 기존에 만들었던 meta-myproject 레이어 아래 레시피를 위한 작업 디렉토리 recipes-makelib를 생성하고 그 아래 넣어준다.
+
+```
+recipes-makelib/
+|- files
+|   |- cat.c
+|   |- dog.c
+|   |- func.h
+|- makelib.bb
+```
+
+* files 디렉토리에 들어가는 소스 파일과 헤더 파일을 생성한다.
+
+~/poky_src/poky/meta-myproject/recipes-makelib/files/cat.c
+```cpp
+#include <stdio.h>
+
+void makevoicefromcat(void){
+    printf ("Meow! Meow! Meow! \n");
+}
+```
+
+~/poky_src/poky/meta-myproject/recipes-makelib/files/dog.c
+```cpp
+#include <stdio.h>
+
+void makevoicefromdog(void){
+    print ("Bark! Bark! Bark! \n");
+}
+```
+
+~/poky_src/poky/meta-myproject/recipes-makelib/files/func.h
+```cpp
+#ifndef __FUNC_H__
+#define __FUNC_H__
+
+void makevoicefromdog(void);
+void makevoicefromcat(void);
+
+#endif
+```
+
+* 공유 라이브러리를 만드는 레시피 파일을 만들어본다.
+
+~/poky_src/poky/meta-myproject/recipes-makelib/makelib.bb
+```
+DESCRIPTION = "This recipe makes shared library"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+# 소스 트리 내에서 라이선스 파일을 참조할 수 없으면 오픈임베디드 코어에서 제공하는 라이선스인 ${COMMON_LICENSE_DIR}/MIT를 참조한다.
+
+SRC_URI = "file://dog.c \
+        file://cat.c \
+        file://func.h \
+        "
+
+do_compile() {
+    ${CC} -fPIC -c dog.c    # -fPIC 옵션: 위치 독립적인 코드(Position Independent Code)를 뜻함
+    ${CC} -fPIC -c cat.c
+    ${CC} ${LDFLAGS} -shared -Wl,-soname=libtest.so.1 -o libtest.so.1.0 *.o
+      # LDFLAGS(Linker Flags): 링커에 전달되는 플래그로서, 링크 단계에서 사용되는 뒤따라오는 옵션들을 지정하는 변수이다.
+      # shared: 컴파일러에게 실행이 가능한 오브젝트에 링크를 걸어줄 수 있는 공유 라이브러리를 만든다고 알려줌
+      # Wl: Wl은 링커에게 전해주는 옵션으로 여기서는 -soname=libtest.so.1을 전달한다.
+      # soname: API 호환성을 명시적으로 링커에게 알려줌 (libtest.so -> libtest.so.1 -> libtest.so.1.0) = (컴파일 시 사용되는 라이브러리 -> 런타임에 사용되는 라이브러리 -> 실제로 생성된 라이브러리)
+      # `$ objectdump -p libtest.so.1.0` 명령을 통해 NEEDED (실행 시간에 여기에 표시된 라이브러리가 로드되어야 한다는 뜻), SONAME 섹션 값을 확인할 수 있다.
+}
+
+RPROVIDES_${PN} = "makelib"    # makelib 레시피에 의해 생성된 라이브러리에 실행 시간 의존성을 가진 패키지가 있다면 여기에 makelib을 넣어야 함
+
+do_install() {
+    install -d ${D}${libdir}
+    install -m 0755 libtest.so.1.0 ${D}${libdir}
+    ln -s libtest.so.1.0 ${D}${libdir}/libtest.so.1
+    ln -s libtest.so.1 ${D}${libdir}/libtest.so
+    install -d ${D}${includedir}
+    install -m 0644 func.h ${D}${includedir}
+}
+
+FILES_${PN} = "${libdir}/libtest.so.1.0 ${libdir}/libtest.so.1"    # 런타임에 필요함
+FILES_${PN}-dev = "${libdir}/libtest.so ${includedir}/func.h"    # 컴파일에 필요함
+S = "${WORKDIR}"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:":
+```
+
+* 라이브러리를 수동으로 컴파일하는 방법은 다음과 같다.
+
+```
+~/poky_src/poky/meta-myproject/recipes-makelib/files$ ls
+cat.c    dog.c    func.h
+
+# 수동 컴파일
+~/poky_src/poky/meta-myproject/recipes-makelib/files$ gcc -fPIC -c cat.c
+~/poky_src/poky/meta-myproject/recipes-makelib/files$ gcc -fPIC -c dog.c
+~/poky_src/poky/meta-myproject/recipes-makelib/files$ gcc -shared -Wl,-soname=libtest.so.1 -o libtest.so.1.0 *.o
+
+~/poky_src/poky/meta-myproject/recipes-makelib/files$ ls
+cat.c    cat.o    dog.c    dog.o    func.h    libtest.so.1.0
+
+# 심볼릭 링크 생성
+~/poky_src/poky/meta-myproject/recipes-makelib/files$ ln -s libtest.so.1.0 libtest.so.1
+~/poky_src/poky/meta-myproject/recipes-makelib/files$ ln -s libtest.so.1 libtest.so
+```
+
+* 이제 `$ bitbake makelib` 명령어로 빌드해 본다.
+  - 특정 레시피를 빌드하면서 생성되는 작업 산출물 디렉토리는 WORKDIR 변수에 지정되어 있다.
+  - image 디렉토리는 do_install 태스크가 수행되어 나오는 산출물들이 저장되는 디렉토리이다. (${WORKDIR}/{D} 디렉토리)
+
+```
+~/poky_src/build5/tmp/work/core2-64-great-linux/makelib/1.0-r0/image
+|- usr
+    |- include
+    |   |- func.h
+    |- lib
+        |- libtest.so -> libtest.so.1
+        |- libtest.so.1 -> libtest.so.1.0
+        |- libtest.so.1.0
+```
+
+* do_package 태스크는 do_install 태스크의 결과물을 갖고 ${WORKDIR}/package 디렉토리에 저장한다.
+
+```
+~/poky_src/build5/tmp/work/core2-64-great-linux/makelib/1.0-r0/package
+|- usr
+    |- include
+    |   |- func.h
+    |- lib
+        |- libtest.so -> libtest.so.1
+        |- libtest.so.1 -> libtest.so.1.0
+        |- libtest.so.1.0
+```
+
+* do_package 태스크는 패키지를 분류해 ${WORKDIR}/packages-split 디렉토리에 배치한다. 분리된 패키지들은 각각 rpm 파일로 만들어진다.
+
+```
+~/poky_src/build5/tmp/work/core2-64-great-linux/makelib/1.0-r0/packages-split
+|- makelib
+|   |- usr
+|       |- lib
+|           |- libtest.so.1 -> libtest.so.1.0
+|           |- libtest.so.1.0
+|- makelib-dbg
+|   |- usr
+|       |- lib
+|- makelib-dev
+|   |- usr
+|       |- include
+|       |   |- func.h
+|       |- lib
+|           |- libtest.so -> libtest.so.1
+|- makelib-doc
+|- makelib-locale
+|- makelib-shlibdeps
+|- makelib-src
+|- makelib-staticdev
+```
+
+* do_package_write_rpm 태스크가 샐행되면 산출물들은 최종적으로 Package Feed인 tmp/deploy-rpms에 들어가게 된다.
+
+```
+~/poky_src/build5/tmp/work/core2-64-great-linux/makelib/1.0-r0/deploy-rpms
+|- core2_64
+    |- libtest1-1.0-r0.core2_64.rpm
+    |- libtest-dbg-1.0-r0.core2_64.rpm
+    |- libtest-dev-1.0-r0.core2_64.rpm
+```
+
+* 이제 libtest.so.1.0 파일로 런타임에 사용하는 애플리케이션을 만들어 보자.
+  - meta-myproject 디렉토리 아래에 recipes-uselib 디렉토리를 생성한다.
+
+```
+recipes-uselib
+|- files
+|   |- func.h
+|   |- libtest.so (생성된 libtest.so.1.0 파일을 복사해 와서 이름을 변경할 것)
+|   |- makevoicemain.c
+|- uselib.bb (애플리케이션 생성을 위한 레시피)
+```
+
+~/poky_src/poky/meta-myproject/recipes-uselib/files/func.h
+```cpp
+#ifndef __FUNC_H__
+#define __FUNC_H__
+
+void makevoicefromdog(void);
+void makevoicefromcat(void);
+
+#endif
+```
+
+~/poky_src/poky/meta-myproject/recipes-uselib/files/makevoicemain.c
+```cpp
+#include <stdio.h>
+#include "func.h"
+
+int main(void) {
+    printf ("Hello makevoicemain! \n");
+    makevoicefromdog();
+    makevoicefromcat();
+
+    return 0;
+}
+```
+
+~/poky_src/poky/meta-myproject/recipes-uselib/uselib.bb
+```
+DESCRIPTION = "This recipes makes execution file which uses libtest.so"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+
+SRC_URI = "file://makevoicemain.c \
+          file://libtest.so \
+          file://func.h \
+          "
+
+do_compile() {
+    ${CC} ${LDFLAGS} -I -wl,-rpath=${libdir} -L. makevoicemain.c -ltest -o makevoicemain
+}
+# rpath: 빌드 결과로 만들어진 애플리케이션이 실행될 때 해당 라이브러리의 위치
+# L: 만들려는 애플리케이션을 위해 필요한 라이브러리의 위치
+# I: 라이브러리의 이름으로 lib 접두어를 생략한 이름 (libtest.so인 경우 -ltest)
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 makevoicemain ${D}${bindir}
+}
+
+RDEPENDS_${PN} = "makelib"    # 현재 만들려는 애플리케이션의 실행 시간 의존성이 걸려 있는 패키지를 기술함 (makelib.bb 레시피에서 RPROVIDES 변수에 넣어준 값과 동일해야 하며 패키지의 이름이어야 함)
+S = "${WORKDIR}"
+
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILES_${PN} += "${bindir}/makevoicemain"
+```
+
+* 이제 2개의 레시피에 의해 만들어진 패키지들이 루트 파일 시스템에 포함되도록 한다.
+  - 이미지 생성 레시피인 great-image.bbappend 레시피 확장 파일에 IMAGE_INSTALL 변수를 통해 추가한다.
+
+~/poky_src/poky/meta-myproject/recipes-core/images/great-image.bbappend
+```
+IMAGE_INSTALL += "packagegroup-great"
+IMAGE_INSTALL += "uselib makelib"    # 추가됨
+```
+
+* 새로 만들어진 레시피를 빌드한다.
+
+```
+$ bitbake makelib
+$ bitbake uselib
+$ bitbake great-image -C rootfs
+$ runqemu great-image nographic
+```
+
+### 개선된 라이브러리 생성 패키지 실습
 
 ...
 
