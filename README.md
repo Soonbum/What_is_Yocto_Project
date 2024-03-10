@@ -3916,6 +3916,9 @@ ROOTFS_POSTPROCESS_COMMAND += "create_dummy_dir;"
   - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b pkg_postinst`
 
 * 설치 후 스크립트가 반영된 uselib.bb 파일은 다음과 같다.
+  - 루트 파일 시스템에 uselib 패키지를 설치할 때 /usr/bin 디렉토리에 test.txt 파일을 생성한다.
+  - 타깃이 처음 부팅할 때도 타깃의 /usr/bin 디렉토리에 test2.txt 파일을 생성한다.
+  - if [ "x$D" = "x" ] 표현식은 do_install 태스크 실행이 완료됐을 때 결과물이 생성되는 디렉토리인 $D가 존재하는지 여부를 비교하는 식이다.
 
 ~/poky_src/poky/meta-myproject/recipes-uselib/uselib.bb
 ```
@@ -3943,13 +3946,14 @@ FILES_${PN} += "${bindir}/makevoicemain"
 
 pkg_postinst_${PN} () {
     if [ "x$D" = "x" ]; then
-        printf "It shouldn't be executed"
+        printf "It shouldn't be executed"    # 타깃에서 처음 부팅하고 난 후 실행됨
     else
-        file=$D${bindir}/test.txt
+        file=$D${bindir}/test.txt            # 호스트 시스템에서 루트 파일 시스템 생성 시간 동안 실행됨
         printf "This is postinst test.\n" > $file
     fi
 }
 
+# 첫 부팅 이후에 타깃에서 실행되는 셸 스크립트 (명시적)
 pkg_postinst_ontarget_${PN} () {
     echo "This is postinst test on target" > ${bindir}/test2.txt
 }
