@@ -3678,9 +3678,100 @@ $ runqemu great-image nographic
   - 기존 GitHub에서 받은 소스: `$ git checkout improved_makelib`
   - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b improved_makelib`
 
-...
+* 앞의 "라이브러리 생성을 통한 패키지 실습" 소스에서 바뀌는 부분이 2개 있다.
+  - SRC_URI에서 기존에 존재했던 libtest.so, func.h 파일을 삭제한다.
+  - RDEPENDS를 DEPENDS로 수정해 실행 시간 의존성을 빌드 시간 의존성으로 바꾼다.
 
-# 패키지 설치를 위한 태스크
+~/poky_src/poky/meta-myproject/recipes-uselib/uselib.bb
+```
+DESCRIPTION = "This recipes makes execution file which uses libtest.so"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+
+SRC_URI = "file://makevoicemain.c \
+          "
+
+do_compile() {
+    ${CC} ${LDFLAGS} -I -wl,-rpath=${libdir} -L. makevoicemain.c -ltest -o makevoicemain
+}
+# rpath: 빌드 결과로 만들어진 애플리케이션이 실행될 때 해당 라이브러리의 위치
+# L: 만들려는 애플리케이션을 위해 필요한 라이브러리의 위치
+# I: 라이브러리의 이름으로 lib 접두어를 생략한 이름 (libtest.so인 경우 -ltest)
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 makevoicemain ${D}${bindir}
+}
+
+DEPENDS_${PN} = "makelib"
+S = "${WORKDIR}"
+
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILES_${PN} += "${bindir}/makevoicemain"
+```
+
+* 이제 makelib.bb 파일을 수정한다.
+  - RPROVIDES 변수만 주석 처리해주면 된다.
+  - PROVIDES 변수에 makelib 레시피 이름을 할당해야 하지만, 생략하면 레시피 이름을 기본값으로 갖게 되므로 PROVIDES 값이 makelib이 된다.
+
+~/poky_src/poky/meta-myproject/recipes-makelib/makelib.bb
+```
+DESCRIPTION = "This recipe makes shared library"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+# 소스 트리 내에서 라이선스 파일을 참조할 수 없으면 오픈임베디드 코어에서 제공하는 라이선스인 ${COMMON_LICENSE_DIR}/MIT를 참조한다.
+
+SRC_URI = "file://dog.c \
+        file://cat.c \
+        file://func.h \
+        "
+
+do_compile() {
+    ${CC} -fPIC -c dog.c    # -fPIC 옵션: 위치 독립적인 코드(Position Independent Code)를 뜻함
+    ${CC} -fPIC -c cat.c
+    ${CC} ${LDFLAGS} -shared -Wl,-soname=libtest.so.1 -o libtest.so.1.0 *.o
+      # LDFLAGS(Linker Flags): 링커에 전달되는 플래그로서, 링크 단계에서 사용되는 뒤따라오는 옵션들을 지정하는 변수이다.
+      # shared: 컴파일러에게 실행이 가능한 오브젝트에 링크를 걸어줄 수 있는 공유 라이브러리를 만든다고 알려줌
+      # Wl: Wl은 링커에게 전해주는 옵션으로 여기서는 -soname=libtest.so.1을 전달한다.
+      # soname: API 호환성을 명시적으로 링커에게 알려줌 (libtest.so -> libtest.so.1 -> libtest.so.1.0) = (컴파일 시 사용되는 라이브러리 -> 런타임에 사용되는 라이브러리 -> 실제로 생성된 라이브러리)
+      # `$ objectdump -p libtest.so.1.0` 명령을 통해 NEEDED (실행 시간에 여기에 표시된 라이브러리가 로드되어야 한다는 뜻), SONAME 섹션 값을 확인할 수 있다.
+}
+
+# RPROVIDES_${PN} = "makelib"    # makelib 레시피에 의해 생성된 라이브러리에 실행 시간 의존성을 가진 패키지가 있다면 여기에 makelib을 넣어야 함
+
+do_install() {
+    install -d ${D}${libdir}
+    install -m 0755 libtest.so.1.0 ${D}${libdir}
+    ln -s libtest.so.1.0 ${D}${libdir}/libtest.so.1
+    ln -s libtest.so.1 ${D}${libdir}/libtest.so
+    install -d ${D}${includedir}
+    install -m 0644 func.h ${D}${includedir}
+}
+
+FILES_${PN} = "${libdir}/libtest.so.1.0 ${libdir}/libtest.so.1"    # 런타임에 필요함
+FILES_${PN}-dev = "${libdir}/libtest.so ${includedir}/func.h"    # 컴파일에 필요함
+S = "${WORKDIR}"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:":
+```
+
+* 기존의 makelib.bb 레시피 파일과 uselib.bb 레시피 파일의 빌드 결과물을 삭제하고 다시 빌드한다.
+  - 이전 예제에서는 makelib.bb 레시피를 먼저 빌드하고 uselib.bb 레시피를 빌드해야만 했다.
+  - 그러나 이번에는 uselib.bb 레시피를 빌드해도 문제가 없다. (makelib.bb 레시피를 미리 빌드하여 recipe-sysroot 디렉토리에 가져온 것을 볼 수 있다)
+
+```
+$ bitbake makelib -c cleanall
+$ bitbake uselib -c cleanall
+$ bitbake uselib
+```
+
+* 다시 루트 파일 시스템을 만들고 QEMU를 실행시켜 실행 파일인 amkevoicemain을 실행해본다.
+
+```
+$ bitbake great-image -C rootfs
+$ runqemu great-image nographic
+```
+
+# 패키지 설치 과정을 실행하는 do_rootfs, do_image 태스크
 
 ...
 
