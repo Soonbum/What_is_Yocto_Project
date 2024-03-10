@@ -3771,7 +3771,189 @@ $ bitbake great-image -C rootfs
 $ runqemu great-image nographic
 ```
 
-# 패키지 설치 과정을 실행하는 do_rootfs, do_image 태스크
+# do_rootfs 태스크
+
+```
+                do_fetch
+                     |
+                     v
+                do_unpack
+                     |
+                     v
+                do_patch
+                     |
+                     v
+                do_prepare_recipe_sysroot
+                     |
+                     v
+                do_configure
+                     |
+                     v
+                do_compile
+                     |
+                     v
+                do_install
+                     |
+         ------------------------
+         |                      |
+         v                      v
+do_populate_sysroot       do_package
+                                |
+                                v
+                          do_packagedata
+                                |
+                                v
+                          do_package_write_rpm
+                                |
+                                v
+                          do_package_qa
+                                |
+                                v
+                          do_rootfs
+                                |
+                                v
+                          do_iamge
+```
+
+* Package Feed에 배치된 rpm 파일들을 루트 파일 시스템에 설치하는 과정을 배울 것이다.
+  - do_rootfs 태스크: 루트 파일 시스템에 rpm 파일(패키지)들을 설치함
+  - Pakcage Feed의 위치: build/tmp/deploy/rpm
+
+* do_rootfs 태스크 이후에 루트 파일 시스템을 커스터마이즈하려면 ROOTFS_POSTPROCESS_COMMAND 변수를 이용하면 된다.
+  - 빌드 시스템이 루트 파일 시스템을 생성한 후에 처리할 작업들이 있을 때 사용함
+  - 이 변수에 셸 함수를 할당하면 do_rootfs가 끝나고 바로 셸 함수를 실행한다.
+
+* do_rootfs 태스크 이후에 do_image 태스크가 실행된다.
+  - do_image: 루트 파일 시스템 이미지를 생성함
+
+* do_rootfs, do_image 태스크들은 일반 바이너리를 생성하는 레시피에서 처리하는 과정이 아니라 루트 파일 시스템 이미지를 생성하는 레시피에 의해서만 실행된다.
+  - great-image.bb 레시피가 루트 파일 시스템 이미지를 생성하는 레시피이므로 여기서만 do_rootfs, do_image 태스크들이 실행된다.
+  - 최종 루트 파일 시스템이 만들어질 파일들과 디렉토리가 모여 있는 곳은 IMAGE_ROOTFS 변수에 지정되어 있다.
+
+* 패키지 관리자 활성화 여부
+  - 루트 파일 시스템에 패키지 설치시 패키지 관리자의 활성 여부와 관계없이 패키지 관리자는 수행된다.
+  - 만약 패키지 관리자를 활성화하지 않으면 이미지에 패키지 관리자와 관련된 데이터가 포함되지 않지만, 패지키 관리자는 여전히 루트 파일 시스템을 구성하는 데 사용된다. (태스크 수행이 끝날 때 루트 파일 시스템에서 패키지 관리자의 데이터 파일이 삭제됨)
+  - IMAGE_FEATURES += "package-management": 패키지 관리자를 활성화함 (이렇게 하면 이미지에 기본적인 패키지 데이터베이스와 런타임 패키지 관리를 위해 필요한 도구들이 포함됨)
+  - 패키지 관리자를 이미지에 포함시켜야 새로운 이미지(루트 파일 시스템)를 생성하지 않고 런타임에 타깃 디바이스의 패키지를 업데이트하거나 추가/제거할 수 있다.
+
+* do_rootfs 태스크의 루트 파일 시스템을 만드는 과정은 다음과 같다.
+  - createrepo_c 툴은 RPM 패키지들로부터 XML에 기반한 메타데이터를 만들어낸다.
+  - 이 툴을 사용해 만들어 낸 결과 루트 파일 시스템을 생성하는 레시피 파일인 great-image.bb의 빌드 작업 디렉토리 내에 oe-rootfs-repo 디렉토리가 생성된다.
+  - 패키지를 설치할 루트 파일 시스템을 지정하고, 루트 파일 시스템에 설치할 패키지들을 입력한다.
+  - 의존성 패키지를 찾아내고, 원래 설치하려는 패키지들과 함께 설치 목록이 도출된다. 그리고 패키지 설치 과정이 시작된다.
+  - 실제 설치된 패키지들에 대해 알아보려면 'tmp/deploy/images/great/xxx.rootfs.manifest' 파일을 참고하거나, `bitbake -g great-image` 명령어를 이용하면 된다. (의존성 패키지 리스트를 보거나 생성함)
+
+## 루트 파일 시스템 커스터마이즈하기
+
+* 루트 파일 시스템이 생성되기 전에 루트 파일 시스템을 커스터마이즈하는 방법이 있다.
+  - do_rootfs 태스크가 실행된 후 실행될 함수, 태스크를 만든다고 생각하면 된다.
+
+* ROOTFS_POSTPROCESS_COMMAND 변수는 다음과 같이 세미콜론으로 분리된 셸 함수의 목록을 갖는다.
+  - `ROOTFS_POSTPROCESS_COMMAND += "func1;func2;...funcN"`
+  - 이 변수는 루트 파일 시스템을 만들어 내는 레시피 파일이나 local.conf 파일에서만 추가될 수 있다. (그렇지 않으면 빌드 오류 발생)
+
+### 실습 순서
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout rootfs_postprocess`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b rootfs_postprocess`
+
+* 루트 파일 시스템 최상위 디렉토리에 yocto.txt 파일과 dummy 디렉토리를 생성한다.
+  - yocto.txt 파일에는 ROOTFS_POSTPROCESS_COMMAND 변수의 내용을 넣을 것이다.
+  - great-image.bbappend 레시피 확장 파일을 변경해야 한다.
+
+~/poky_src/poky/meta-myproject/recipes-core/images/great-image.bbappend
+```
+IMAGE_INSTALL += "packagegroup-great"
+IMAGE_INSTALL += "uselib makelib"
+
+test_postprocess_func(){
+    echo "${ROOTFS_POSTPROCESS_COMMAND}" > ${IMAGE_ROOTFS}/yocto.txt
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "test_postprocess_func;"
+
+create_dummy_dir() {
+    mkdir ${IMAGE_ROOTFS}/dummy
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "create_dummy_dir;"
+```
+
+* `$ bitbake great-image -C rootfs` 명령으로 재빌드를 진행한다.
+  - 빌드가 완료되면 루트 파일 시스템 최상위 디렉토리에 yocto.txt 파일과 dummy 디렉토리가 생성된 것을 볼 수 있다.
+
+* ROOTFS_POSTPROCESS_COMMAND 변수에 대해 좀 더 상세한 예제가 필요하다면 오픈임베디드 코어에서 사용한 예제를 살펴보도록 한다.
+  - poky/meta/classes/rootfs-postcommands.bbclass 클래스 파일을 살펴보면 많은 도움이 될 것이다.
+
+## 설치 후 스크립트
+
+* 설치 후 스크립트: 루트 파일 시스템 이미지 생성 중에 실행되거나 타깃이 처음 부팅되고 난 후에 실행되는 스크립트
+  - 주의할 점은 패키지를 생성하는 레시피에서 사용하는 스크립트이지, 루트 파일 시스템을 생성하는 이미지 레시피에서 사용하는 스크립트가 아니라는 것이다.
+  - 이 스크립트는 주로 디렉토리 및 임시 파일 생성, 접근 권한 설정 등에 사용된다.
+  - 설치 후 스크립트의 예제는 다음과 같다.
+
+* 루트 파일 시스템 생성 중 사용하는 설치 후 스크립트
+  ```
+  pkg_postinst_${PN} () {
+      # 수행할 셸 스크립트
+  }
+  ```
+
+* 타깃이 처음 부팅되고 난 후에 실행되는 설치 후 스크립트
+  ```
+  pkg_postinst_ontarget_${PN} () {
+      # 수행할 셸 스크립트
+  }
+  ```
+
+* 참고로 타깃이 처음 부팅되고 난 후 pkg_posting을 실행하는 스크립트는 meta/recipes-devtools/run-postinsts/ 디렉토리에서 확인할 수 있으며 관련 레시피 파일도 존재한다.
+
+### 실습 순서
+
+* 관련 소스 다운로드 방법
+  - 기존 GitHub에서 받은 소스: `$ git checkout pkg_postinst`
+  - 미리 완성된 실습 소스를 받는 방법: `~$ git clone https://GitHub.com/greatYocto/poky_src.git -b pkg_postinst`
+
+* 설치 후 스크립트가 반영된 uselib.bb 파일은 다음과 같다.
+
+~/poky_src/poky/meta-myproject/recipes-uselib/uselib.bb
+```
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+SRC_URI = "file://makevoicemain.c \
+         "
+
+do_compile() {
+    ${CC} ${LDFLAGS} -I -wl,rpath=${libdir} -L. makevoicemain.c -ltest -o makevoicemain
+}
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 makevoicemain ${D}${bindir}
+}
+
+# RDEPENDS_${PN} = "makelib"
+DEPENDS = "makelib"
+
+S = "${WORKDIR}"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+
+FILES_${PN} += "${bindir}/makevoicemain"
+
+pkg_postinst_${PN} () {
+    if [ "x$D" = "x" ]; then
+        printf "It shouldn't be executed"
+    else
+        file=$D${bindir}/test.txt
+        printf "This is postinst test.\n" > $file
+    fi
+}
+
+pkg_postinst_ontarget_${PN} () {
+    echo "This is postinst test on target" > ${bindir}/test2.txt
+}
+```
 
 ...
 
