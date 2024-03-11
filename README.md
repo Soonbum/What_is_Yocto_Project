@@ -3909,6 +3909,14 @@ ROOTFS_POSTPROCESS_COMMAND += "create_dummy_dir;"
 
 * 참고로 타깃이 처음 부팅되고 난 후 pkg_posting을 실행하는 스크립트는 meta/recipes-devtools/run-postinsts/ 디렉토리에서 확인할 수 있으며 관련 레시피 파일도 존재한다.
 
+* 패키지 관리 시스템은 다음과 같이 패키지가 설치 전후, 삭제 전후로 실행되는 스크립트를 제공한다.
+  스크립트 | 설명
+  -------- | ----
+  pkg_postinst_<package name> | 패키지가 설치되고 난 후 수행되는 스크립트
+  pkg_preinst_<package name> | 패키지가 설치되기 전에 수행되는 스크립트
+  pkg_prerm_<package name> | 패키지가 삭제되기 전에 수행되는 스크립트
+  pkg_postrm_<package name> | 패키지가 삭제되고 난 후 수행되는 스크립트
+
 ### 실습 순서
 
 * 관련 소스 다운로드 방법
@@ -3959,7 +3967,21 @@ pkg_postinst_ontarget_${PN} () {
 }
 ```
 
-...
+* uselib 레시피를 빌드한다.
+  - `$ bitbake uselib -c cleanall && bitbake uselib && bitbake great-image`
+  - 빌드 완료 후에 루트 파일 시스템이 만들어져 있는 tmp/work/great-great-linux/great-image/1.0-r0/rootfs/ 디렉토리에 가보면 /usr/bin 디렉토리에 test.txt 파일이 생성되어 있다.
+
+* 생성된 패키지 내에 설치 후 스크립트가 들어가 있는지 확인해 본다.
+  - 먼저 2가지 패키지를 ubuntu에 설치해야 한다. `$ sudo apt install rpm2cpio rpm`
+  - uselib 레시피 패키지 결과물인 uselib-1.0-r0.core2_64.rpm 파일이 존재하는 ~/poky_src/build2/tmp/work/core2-64-great-linux/uselib/1.0-r0/deploy-rpms/core2_64 디렉토리로 이동한다.
+  - .rpm 파일을 extract하여 설치 후 스크립트를 확인한다.
+    ```
+    ... deploy-rpms/core2_64$ mkdir extract
+    ... deploy-rpms/core2_64$ cd extract/
+    ... deploy-rpms/core2_64/extract$ rpm -qp --scripts ../usblib-1.0-r0.core2_64.rpm
+    output
+    ```
+  - output 파일을 열어보면 생성된 파일을 확인할 수 있다.
 
 # 공유 상태 캐시와 시그니처
 
