@@ -4151,9 +4151,30 @@ world | 단순하게 모든 레시피들에 속한 모든 태스크들을 실행
 
 # kirkstone
 
+## kirkstone의 특징
+
+* 대략 93개의 보안 관련 패치(Common Vulnerability and Exposures)가 반영됨
+* CVE 패치가 반영된 패키지들은 다음과 같다: binutils, curl, epiphany, expat, ffmpeg, gcc, glibc, gmp, go, grub2, gzip, libarchive, libxml2, libxslt, lighttpd, linux-yocto, amdgpu, lua, openssl, qemu, rpm, seatd, speex, squashfs-tools, systemd, tiff, unzip, vim, virglrenderer, webkitgtk, xz, zlib
+* 대략 318개의 오픈 소스 패키지 버전이 업그레이드됨
+* 기본적으로 패키지 간 의존성의 숫자를 줄였기 때문에 빌드에 걸리는 시간이 감소함 (Rust 컴파일러가 적용됨)
+* gzip 대신 zstd로 압축 해제 표준을 바꿔 공유 상태 성능을 향상시킴 (zstd은 gzip과 압축률이 비슷하지만 압축 해제 속도가 더 빠름)
+* 기존 대비 훨씬 더 정확한 라이선스 준수를 통해 라이선스 관리 툴의 개선을 가져옴
+* kirkstone은 최소 4.x 버전 이상의 커널을 지원함
+* linux_kernel_header는 더 이상 의무사항이 아님 (linux_kernel_header: 리눅스 커널 개발과 관련된 작업을 수행하는 데 필요한 헤더 파일들을 제공하는 패키지)
+* __append, prepend, remove 연산자는 이제 '=' 또는 ':=' 연산자와 결합해서만 사용할 수 있음__
+* __BB_ENV_EXTRAWHITE 변수는 셸 환경 변수를 bitbake 전역 환경 변수로 만들 수 있는 방법을 제공함. 이 변수는 kirkstone 버전에서 BB_ENV_PASSTHROUGH_ADDITIONS로 바뀌었음.__
+* __append, prepend, remove 연산자 사용에 있어서 '변수_<append, prepend, remove>' 형식이 '변수:<append, prepend, remove>' 형식으로 바뀌었음__
+* __변수와 마찬가지로 조건부 변수에서 '_'가 ':'로 바뀌었음__
+
+## kirkstone 설치
+
 ...
 
-# 개발 환경 구축
+## dunfell 버전을 kirkstone으로 마이그레이션하기
+
+...
+
+# SDK(Software Development Kit)
 
 ...
 
