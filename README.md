@@ -4168,11 +4168,121 @@ world | 단순하게 모든 레시피들에 속한 모든 태스크들을 실행
 
 ## kirkstone 설치
 
-...
+* ubuntu에서 패키지 설치하기 (ubuntu 18.04 환경 기준)
+  - 의존성 패키지 설치에 대한 정보는 [여기](https://docs.yoctoproject.org/4.0.9/brief-yoctoprojectqs/index.html)를 참조하십시오.
+
+```
+$ sudo apt install gawk wget git diffstat unzip texinfo gcc build-essential chrpath socat cpio
+
+$ sudo apt install python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping python3-git python3-jinja2
+
+$ sudo apt install libegl1-mesa libsdl1.2-dev pylint3 xterm python3-subunit mesa-common-dev zstd liblz4-tool
+```
+
+* kirkstone 소스 가져오기
+
+```
+$ git clone https://GitHub.com/yoctoproject/poky.git .
+$ git checkout kirkstone
+```
+
+* 테스트를 위해 Poky에서 제공하는 이미지 레시피 core-image-minimal.bb를 빌드해본다.
+
+```
+$ source poky/oe-init-build-env
+$ bitbake core-image-minimal
+```
 
 ## dunfell 버전을 kirkstone으로 마이그레이션하기
 
-...
+* 오픈임베디드 빌드 시스템은 dunfell에서 kirkstone으로 마이그레이션 할 때 문법, 라이선스 사용법과 같은 바뀐 부분들을 알아서 수정해주는 스크립트를 제공한다. (~/kirkstone/poky/scripts/contrib 디렉토리 참조)
+  - convert-srcuri.py 스크립트
+    * kirkstone에서는 SRC_URI에 git을 사용할 때 브랜치를 꼭 기입해야 한다. (master 브랜치라도 예외없음)
+    * 만약 현재 해시 값이 tag를 사용하기 때문에 브랜치를 기입할 수 없으면 'nobranch=1' 옵션을 설정해야 한다.
+    * GitHub에서 git protocol은 안 되고 http protocol만 허용함
+    * `convert-srcuri.py <recipe name>`
+  - convert-overrides.py 스크립트
+    * kirkstone에서는 append, prepend, remove 변수와 조건부 변수를 사용할 때 '_'를 ':'로 바꿔야 하는데 이 스크립트가 해당 문법을 자동으로 수정해준다.
+    * `convert-overrides.py <recipe name>`
+  - convert-spdx-licenses.py 스크립트
+    * kirkstone에서는 레시피에 기술된 라이선스 이름이 기존보다 엄격한 기준을 적용해 검증된다.
+    * `convert-spdx-licenses.py <recipe name>`
+    * 다음은 변경된 라이선스 이름이다.
+
+dunfell 라이선스 이름 | kirkstone 라이선스 이름
+--------------------- | -------------------------
+BSD | BSD-3-Clause
+GPLv3 | GPL-3.0-only
+GPLv3+ | GPL-3.0-or-later
+GPLv2 | GPL-2.0-only
+GPL-2.0 | GPL-2.0-only
+GPLv2+ | GPL-2.0-or-later
+
+* image-mklibs.bbclass 클래스 파일과 image-prelink.bbclass 클래스 파일이 삭제되었으므로 local.conf 파일을 수정해야 할 수도 있다.
+  - template 디렉토리에 존재하는 local.conf.sample 파일을 수정해야 함
+
+* BB_DISKMON_DIRS 변수에서 HALT 값이 ABORT 값으로 바뀌었음
+  - template 디렉토리에 존재하는 local.conf.sample 파일을 수정해야 함
+
+* 커널 레시피 파일을 수정할 것
+  - SRCREV 변수에 commit id에 해당하는 해시(revision)값을 정해줄 것
+  - COMPATIBLE_MACHINE 변수에 할당하는 형식이 바뀜
+
+* 커널 코드를 수정할 것
+  - kirkstone으로 업데이트되면서 gcc 버전이 11 버전으로 업데이트되었다. ('-fno-common' 옵션을 기본값으로 사용하게 됨)
+  - 따라서 컴파일러가 초기화되지 않은 전역 변수를 객체 파일의 BSS 섹션에 배치하도록 지정된다. (동일한 변수가 둘 이상의 컴파일 단위에 정의된 경우 다중 정의 오류가 발생함)
+  - _force_order 변수가 pgtable_64.c와 kaslr_64.c에 중복으로 정의되어 있으므로 한쪽 파일에서 _force_order 변수를 extern 변수로 수정해야 함
+
+* machine 환경 설정 파일을 수정할 것
+  - QEMU 머신을 사용할 경우 machine의 인클루드 파일 경로를 변경해야 함 (`conf/machine/include/qemuboot-x86.inc` -> `conf/machine/include/x86/qemuboot-x86.inc`로 변경)
+
+* reproducible_build.bbclass 클래스 파일이 삭제됨
+  - 배포 환경 설정 파일에서 이 클래스를 상속 받는 부분을 주석 처리할 것
+  - kirkstone에서 이 클래스 파일이 base.bbclass 클래스 파일로 합쳐졌으므로 더 이상 reproducible_build.bbclass 클래스 파일이 존재하지 않음
+
+* Yocto 리눅스 레시피 확장 파일인 linux-yocto_5.4.bbappend 파일을 삭제할 것
+  - kirkstone으로 업데이트되면서 지원되는 Yocto 리눅스는 5.10, 5.15이므로 5.4에 대한 레시피 파일이 존재하지 않음
+
+* EXTRA_USERS_PARAMS 변수에서 'useradd -p `openssl passwd 9876` great;` 부분을 삭제해야 함
+  - 보안상의 문제로 이 방법은 더 이상 사용할 수 없음
+  - 패스워드를 외부 툴(mkpasswd)을 이용해 생성한 후 생성된 해시값을 다음과 같이 사용자 계정에 넣어줄 것
+  - `mkpasswd -m sha-512 <패스워드> -s "시드값: 8~16글자 문자열"`
+
+~/kirkstone/poky/meta-great/recipes-core/image/great-image.bb
+```
+SUMMARY = "A very small image for yocto test"
+
+inherit great-base-image
+
+LINGUAS_KO_KR = "ko-kr"
+LINGUAS_EN_US = "en-us"
+
+IMAGE_LINGUAS = "${LINGUAS_KO_KR} ${LINGUAS_EN_US}"
+
+# IMAGE_INSTALL += "packagegroup-great"
+# IMAGE_INSTALL += "mykernelmod"
+
+IMAGE_OVERHEAD_FACTOR = "1.3"
+
+inherit extrausers
+
+EXTRA_USERS_PARAMS = " \
+    usermod -p '\$6\$12345678\$zYTErUfpqzN5dmxG3gGKbhqFHaN9SxsePAd7oKlc5M1Qf.c.vhkThAe0Wyx8jRf37/HtlKAJvFfluXwQn/FWi1' root;\
+    useradd -p '' great \
+"
+```
+
+`$ mkpasswd -m sha-512 greatyocto -s "12345678"`을 실행하면 다음과 같은 결과가 나온다.
+  - `$6$12345678$zYTErUfpqzN5dmxG3gGKbhqFHaN9SxsePAd7oKlc5M1Qf.c.vhkThAe0Wyx8jRf37/HtlKAJvFfluXwQn/FWi1`
+
+* 기존에 생성된 build/conf 디렉토리를 삭제하고 환경 설정 초기화 스크립트인 oe-init-build-env 대신 buildenv.sh을 실행하고 빌드를 진행한다.
+
+```
+~/kirkstone$ rm -rf build/conf
+~/kirkstone$ source buildenv.sh
+~/kirkstone/build$ bitbake great-image
+~/kirkstone/build$ runqemu nographic
+```
 
 # SDK(Software Development Kit)
 
