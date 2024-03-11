@@ -3983,6 +3983,60 @@ pkg_postinst_ontarget_${PN} () {
     ```
   - output 파일을 열어보면 생성된 파일을 확인할 수 있다.
 
+# do_image 태스크
+
+```
+                do_fetch
+                     |
+                     v
+                do_unpack
+                     |
+                     v
+                do_patch
+                     |
+                     v
+                do_prepare_recipe_sysroot
+                     |
+                     v
+                do_configure
+                     |
+                     v
+                do_compile
+                     |
+                     v
+                do_install
+                     |
+         ------------------------
+         |                      |
+         v                      v
+do_populate_sysroot       do_package
+                                |
+                                v
+                          do_packagedata
+                                |
+                                v
+                          do_package_write_rpm
+                                |
+                                v
+                          do_package_qa
+                                |
+                                v
+                          do_rootfs
+                                |
+                                v
+                          do_iamge
+```
+
+* do_image 태스크: 이미지 생성을 시작하는 태스크
+  - do_image 태스크는 오픈임베디드 빌드 시스템이 do_rootfs 태스크 실행이 완료되고 실행된다.
+  - do_image 태스크가 실행되는 동안 이미지에 설치되는 패키지들이 식별되며, 최종적으로 루트 파일 시스템이 생성된다.
+
+* 루트 파일 시스템: 계층적 파일 트리의 최상단에 있으며 여기에는 시스템 부팅을 위한 장치 디렉토리 및 프로그램을 포함해 시스템 동작에 중요한 파일/디렉토리가 포함된다.
+  - 오픈임베디드 코어는 image_type.bbclass 클래스를 제공해 다양한 파일 시스템의 루트 파일 시스템을 생성한다.
+  - 파일 시스템의 종류는 IMAGE_FSTYPES 변수를 통해 설정할 수 있다. (tar.bz2, ext4 등)
+
+...
+
 # 공유 상태 캐시와 시그니처
 
 ...
