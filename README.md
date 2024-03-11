@@ -4050,6 +4050,65 @@ do_populate_sysroot       do_package
 
 # 공유 상태 캐시와 시그니처
 
+## 공유 상태 캐시
+
+* 공유 상태 캐시(Shared State Cache, sstate 캐시라고도 함)
+  - bitbake는 레피시를 성공적으로 빌드하면 출력 결과를 공유 상태 캐시에 저장함
+  - 변경되지 않은 레시피를 재빌드할 경우 이전에 저장한 사전 빌드된 오브젝트를 사용한다.
+  - checksum(시그니처)들은 불필요하게 재빌드되는 것을 최소화하기 위해 각각의 태스크에 대해 계산한다.
+  - 태스크의 해시값이 변경되면 태스크를 재실행해야 한다.
+  - checksum(시그니처) 계산시 환경 설정 파일(local.conf, sitro.conf 등)과 레시피 파일들(.bb, .bbappend) 그리고 의존성을 갖고 있는 레시피 파일들과 함수들, SRC_URI에 추가된 파일들을 고려한다.
+  - checksum(시그니처) 계산값이 동일하다면 빌드 결과물들은 sstate-cache에 그대로 복사해서 이용한다.
+
+* setscene 태스크: 공유 상태 캐시를 통해 현재 실행해야 하는 태스크가 건너뙬 수 있는지 결정한다.
+  - 건너뛸 수 있으면 해당 태스크의 사전 빌드된 오브젝트 결과물을 가져와 사용한다.
+  - setscene 태스크가 정의된 태스크는 do_install 태스크 이후 바이너리나 패키지 결과물을 생성하는 특정 태스크들에서만 존재한다.
+  - 다음은 do_package 태스크에서 setscene 태스크를 추가하는 예시이다.
+    ```
+    ...
+    SSTATETASKS += "do_package"
+    do_package[cleandirs] = "${PKGDEST} ${PKGDESTWORK}"
+    do_package[sstate-plaindirs] = "${PKGD} ${PKGDEST} ${PKGDESTWORK}"
+    do_package_setscene[dirs] = "${STAGING_DIR}"
+    python do_package_setscene () {
+        sstate_setscene(d)
+    }
+    addtask do_package_setscene
+    ...
+    ```
+
+* bitbake가 setscene 태스크를 실행하는 과정은 다음과 같다.
+  - bitbake는 빌드를 진행하기 전에 공유 상태 캐시를 확인한다. (BB_HASHCHECK_FUNCTION 변수가 지정한 함수(sstate_checkhashes)를 사용함. 이 함수는 재사용 가능한 빌드된 오브젝트들의 리스트를 리턴한다. 태스크의 해시 값을 확인함.)
+  - bitbake는 앞에서 얻은 재사용 가능한 빌드된 오브젝트를 가진 태스크들의 setscene 태스크를 실행한다.
+  - 이후 재상요이 가능한 빌드된 오브젝트를 갖지 못한 태스크들이 순차적으로 실행된다.
+
+* setscene 태스크 종류
+
+태스크 / setscene 태스크 | 설명
+------------------------ | ---
+do_packagedata_setscene | 최종 패키지 생성을 위해 빌드 시스템에 의해 사용되는 패키지 메타데이터를 생성함
+do_package_setscene | do_install 태스크에 의해 생성된 파일들을 이용할 수 있는 패키지들과 파일들에 근거해 나눈다.
+do_package_write_rpm_setscene | RPM 패키지를 생성하고 패키지 피드에 패키지들을 배치시킴
+do_populate_lic_setscene | 이미지가 생성될 때 모아 놓은 레시피를 위한 라이선스 정보를 생성한다.
+do_populate_sysroot_setscene | 다른 레시피들에 의해 이용될 수 있도록 do_install 태스크에 의해 설치된 파일들을 sysroot로 복사함
+do_package_qa_setscene | 패키지로 만들어진 파일들에 대해 QA 검증이 실시됨
+do_image_qa_setscene | 결과 이미지의 유효성을 검사함
+do_image_complete_setscene | 이미지 생성에 연관돼 최종적으로 실행되는 태스크
+
+* 특정 레시피의 태스크가 공유 상태 캐시에 존재하는지 여부를 알려면 다음 커맨드를 입력한다.
+  - `$ oe-check-sstate <image recipe name> | grep <recipe name>`
+  - 다음과 같이 특정 레시피의 공유 상태 캐시 존재를 확인할 수 있다.
+    ```
+    $ oe-check-sstate great-image | grep uselib
+    uselib:do_package_qa
+    uselib:do_package_write_rpm
+    uselib:do_populate_lic
+    uselib:do_populate_sysroot
+    uselib:do_packagedata
+    ```
+
+## 시그니처
+
 ...
 
 # kirkstone
