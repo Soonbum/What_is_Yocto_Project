@@ -4109,7 +4109,45 @@ do_image_complete_setscene | 이미지 생성에 연관돼 최종적으로 실�
 
 ## 시그니처
 
-...
+* bitbake는 태스크 실행이 필요한지 결정할 때 setscene 태스크와 함께 시그니처를 사용한다.
+  - 시그니처 = checksum
+  - 시그니처는 STAMP_DIR 변수가 지정하는 디렉토리에 저장된다.
+  - bitbake는 각각의 태스크가 수행 완료되면 스탬프 파일을 만든다.
+  - 스탬프 파일은 일부 태스크의 실행이 완료됐다는 표시만 하며, 태스크의 출력을 기록하지는 않는다.
+  - 가령 do_compile 태스크가 실행 완료되면, 스탬프 저장 디렉토리에 "<package version>_do_compile_<signature>" 스탬프 파일이 생성된다.
+  - 계산된 시그니처 값과 동일한 시그니처 값이 붙은 파일이 스탬프 디렉토리에 존재한다면 do_compile 태스크를 건너뛰게 된다.
+
+* 시그니처에 대한 예제는 건너뛰도록 한다.
+
+* `$ bitbake -f -c <task name> <recipe name>` 명령어에서 -f 옵션은 강제로 지정한 태스크를 실행하는 역할을 한다.
+  - 정확히는 지정한 태스크의 스탬프 파일을 삭제하는 역할을 한다.
+  - 그러면 bitbake는 해당 태스클르 빌드한 적이 없다고 생각하고 다시 태스크를 실행하는 것이다.
+
+* 다음은 유용한 bitbake 옵션들을 일부 보여주고 있다.
+
+bitbake 옵션 | 설명
+------------ | ----------------
+-c <task> | 주어진 태스크를 실행한다.
+-s | 내부적으로 사용할 수 있는 모든 레시피들의 리스트들과 레시피들의 버전을 출력한다.
+-f | 주어진 태스크의 스탬프 파일을 삭제함으로써 강제로 주어진 태스크를 실행한다.
+world | 단순하게 모든 레시피들에 속한 모든 태스크들을 실행한다.
+-b <recipe file name> | 주어진 레시피 파일을 실행한다. 단, 의존성에 대한 고려를 하지 않는다.
+
+## 이미 생성된 공유 상태 캐시 최적화
+
+* 프로젝트를 계속 빌드하면서 공유 상태 캐시의 크기는 점점 커진다.
+  - 시간이 오래 지나면 중복된 데이터를 공유 상태 캐시에서 삭제해 주어야 한다.
+  - sstate-cache-management.sh 명령을 사용하면 중복된 데이터가 있을 때 이전의 캐시를 삭제하여 불필요한 데이터를 정리할 수 있다.
+    `$ poky/scripts/sstate-cache-management.sh --remove-duplicated -d --cachedir=<SSTATE_IDR>`
+
+* 만약 build2 디렉토리 내에 sstate-cache 디렉토리를 정리할 경우 다음과 같이 하면 된다.
+  - 먼저 sstate-cache 디렉토리의 크기를 확인한다. (`~/poky_src/build2$ du -s sstate-cache/`)
+  - 공유 상태 캐시 최적화 스크립트를 실행한다. (`~/poky_src/poky/scripts$ ./sstate-cache-management.sh --remove-duplicated -d --cache-dir=/home/poky_src/build2/sstate-cache`)
+
+* 한편, 빌드 결과물을 삭제하는 clean, cleansstate, cleanall 태스크의 용도는 다음과 같다.
+  - do_clean 태스크: do_unpack, do_configure, do_compile, do_install, do_package로부터 생성된 모든 출력 파일들을 삭제한다. 또한 스탬프 파일도 함께 삭제한다. 그러나 다운로드 받은 파일과 공유 상태 캐시는 삭제되지 않는다. (`$ bitbake -c clean <recipe>`)
+  - do_cleanall 태스크: 공유 상태 캐시와 스탬프 파일, 모든 생성된 출력 파일들 그리고 다운로드 받은 파일도 함께 삭제된다. (`$ bitbake -c cleanall <recipe>`)
+  - do_cleansstate 태스크: 모든 생성된 출력 파일들, 공유 상태 캐시, 스탬프 파일이 삭제된다. (`$ bitbake -c cleansstate <recipe>`)
 
 # kirkstone
 
