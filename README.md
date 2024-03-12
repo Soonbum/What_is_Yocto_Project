@@ -4037,7 +4037,7 @@ do_populate_sysroot       do_package
                           do_rootfs
                                 |
                                 v
-                          do_iamge
+                          do_image
 ```
 
 * do_image 태스크: 이미지 생성을 시작하는 태스크
@@ -4285,6 +4285,62 @@ EXTRA_USERS_PARAMS = " \
 ```
 
 # SDK(Software Development Kit)
+
+* Yocto의 주요 목적은 리눅스 배포판을 생성하는 것이다.
+  - 그러나 Yocto를 이용해 새롭게 패키지를 개발하고자 한다면 따로 개발 환경을 구축해야 한다.
+  - 개발 환경 구축을 위한 방법으로 다음 2가지를 제공한다: SDK, meta-toolchain
+  - 툴체인 구축: 컴파일러, 링커, 디버거, 외부 라이브러리 헤더 등을 준비하는 것
+  - 개발 환경을 구축하는 것은 툴체일 구축한다는 것과 동일한 뜻이다.
+  - 오픈임베디드 빌드 시스템은 SDK 패키지를 제공하는데 이것은 개발, 디버깅을 하기 위한 툴체인을 포함한다.
+
+* bitbake는 do_populate_sdk, do_populate_sdk_ext 태스크를 실행해 표준 및 확장이 가능한 SDK를 위한 SDK 설치 스크립트를 만든다.
+  - do_populate_sdk 태스크: 표준 SDK 생성을 돕는다. 타깃(타깃 하드웨어, 라이브러리, 헤더 포함)/호스트(SDK가 설치된 머신이며 SDKMACHINE이라고도 함) 부분 모두를 처리함.
+  - do_populate_sdk_ext 태스크: 확장이 가능한 SDK 생성을 돕는다. 표준 SDK와 다른 방식으로 타깃/호스트 부분을 처리한다. 호스트/타깃을 포함하는 빌드 시스템을 캡슐화한다. devtool을 포함한다.
+  - 쉽게 말해 이 태스크들은 개발자가 외부에서 개발할 수 있도록 개발 환경을 제공하는 SDK를 쉽게 구성하도록 도와주는 태스크이다.
+  - SDK를 구축해주는 실행 스크립트를 최종적으로 만들어낸다.
+  - 실행 스크립트 위치: /build/tmp/deploy/sdk/*.sh
+  - 이 스크립트를 실행하면 크로스 컴파일 환경이 구축된 디렉토리가 만들어진다. (나중에 변경 가능)
+
+* 리눅스 배포판 생성과 달리 do_rootfs, do_image 태스크 대신 do_populate_sdk 태스크를 실행한다. (패키지 개발을 위한 태스크 절차)
+
+```
+                do_fetch
+                     |
+                     v
+                do_unpack
+                     |
+                     v
+                do_patch
+                     |
+                     v
+                do_prepare_recipe_sysroot
+                     |
+                     v
+                do_configure
+                     |
+                     v
+                do_compile
+                     |
+                     v
+                do_install
+                     |
+         ------------------------
+         |                      |
+         v                      v
+do_populate_sysroot       do_package
+                                |
+                                v
+                          do_packagedata
+                                |
+                                v
+                          do_package_write_rpm
+                                |
+                                v
+                          do_package_qa
+                                |
+                                v
+                          do_populate_sdk
+```
 
 ...
 
