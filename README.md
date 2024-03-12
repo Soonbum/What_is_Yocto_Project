@@ -4342,11 +4342,7 @@ do_populate_sysroot       do_package
                           do_populate_sdk
 ```
 
-...
-
-# 기타
-
-...
+... (내용 생략)
 
 # devtool
 
@@ -4418,3 +4414,92 @@ fatal | bb.fatal(message) | bbfatal message
   - `bitbake-hashserv`
   - `bitbake-prserv`
   - `bitbake-selftest`
+
+## 파이썬 함수 및 변수 확장
+
+* bitbake는 파이썬, 셸 스크립트로 구성되어 있다.
+  - 파이썬으로 구성된 태스크의 경우, 태스크 이름 앞에 python 지시어를 추가해야 함
+    ```
+    python do_mypythontask() {
+        import time
+        print time.strftime('%Y%m%d', time.gmtime())
+    }
+    ```
+  - 파이썬 함수를 구현하기 위해서는 기존 파이썬 문법 그대로 함수 이름 앞에 def 지시어를 붙이면 된다.
+    ```
+    def get_depends(bb.d);
+        if bb.data.getVar('SOMECONDITION', d, 1):
+            return "dependencywithcond"
+        else:
+            return "dependency"
+    SOMECONDITION = "1"
+    DEPENDS = "${@get_depends(bb,d)}"
+    ```
+  - @ 연산자는 bitbake에게 현재 코드는 파이썬 코드로 이루어진 표현식이라고 알려준다. (inline 방식)
+
+* bitbake는 파이썬 함수에서 변수를 직접 읽고 쓸 수 없고 데이터 사전(data dictionary)을 통해 변수를 읽고 쓸 수 있다. (d 변수: bitbake의 변수들이 저장되어 있는 장소)
+  - pythontest.bb 파일 예시는 다음과 같다.
+    ```
+    LICENSE = "CLOSED"
+    TESTVAR = "This var is read by python function"
+
+    python do_testA () {
+        pythonvar = d.getVar('TESTVAR', True)
+        bb.warn(pythonvar)
+    }
+    addtask do_testA before do_build
+    
+    python do_testB () {
+        d.setVar('TESTVAR', "This var is set by python function")
+        pythonvar2 = d.getVar('TESTVAR', True)
+        bb.warn(pythonvar2)
+    }
+    addtask do_testB before do_testA
+    ```
+  - 다음과 같은 결과가 나온다.
+    ```
+    WARNING: pythontest-1.0-r0 do_testB: This var is set by python function
+    WARNING: pythontest-1.0-r0 do_testA: This var is read by python function    # 이렇게 나오는 이유? do_testA를 실행할 때는 do_testB 함수를 실행하지 않기 때문이다.
+    ```
+  - 파이썬 코드로 작성하는 것은 디버깅이 불편하기 때문에 대화형 파이썬 개발 셸을 이용한 디버깅을 이용할 수 있다.
+
+* devshell과 비슷한 대화형 파이썬 개발 셸 pydevshell이 있다.
+  - do_pydevshell 태스크를 실행하면 된다.
+  - `$ bitbake pythontest -c do_devpyshell`: pythontest.bb 레시피를 타깃으로 디버깅하는 방법
+  - pydevshell 터미널을 종료하려면 Ctrl+D를 입력하면 된다.
+ 
+* 함수나 태스크를 만들 때 가장 많이 사용하는 파이썬 함수는 다음과 같다.
+
+함수 | 설명
+---- | -----
+d.getVar("X", expand=False) | 변수 X의 값을 리턴한다.
+d.setVar("X", "value") | 변수 X에 "value" 값을 할당한다.
+d.appendVar("X", "value") | 변수 X에 값을 append 해준다.
+d.prependVar("X", "value") | 변수 X에 값을 prepend 해준다.
+d.expand(expression) | expression으로 변수들을 확장해준다.
+
+* 익명 파이썬 함수
+  - 레시피가 파싱될 때마다 실행되는 파이썬 함수로, 레시피에 대한 후처리를 돕는다. (__anonymous 키워드를 생략해도 됨)
+    ```
+    LICENSE = "CLOSED"
+    TESTVAR = "This var is read by python function"
+
+    python do_testA () {
+        pythonvar = d.getVar('TESTVAR', True)
+        bb.warn(pythonvar)
+    }
+    addtask do_testA before do_build
+    
+    python do_testB () {
+        d.setVar('TESTVAR', "This var is set by python function")
+        pythonvar2 = d.getVar('TESTVAR', True)
+        bb.warn(pythonvar2)
+    }
+    addtask do_testB before do_testA
+
+    python __anonymous() {
+        pythonvar3 = d.getVar('TESTVAR', True)
+        bb.warn(pythonvar3)
+    }
+    ```
+  - 다음과 같은 순서로 태스크가 실행된다: do_testB 태스크 파싱 -> anonymous 함수 실행 -> do_testB 태스크 실행 -> do_testA 태스크 파싱 -> anonymous 함수 실행 -> do_testA 태스크 실행
