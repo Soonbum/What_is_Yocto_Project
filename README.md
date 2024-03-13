@@ -4393,6 +4393,46 @@ do_populate_sysroot       do_package
     CLOTHES_korean = "hanbok"    # CLOTHES 값이 "hanbok"으로 오버라이드됨
     ```
 
+* 변수 플래그
+  - 변수에 대한 속성의 구현
+  - 예시
+    ```
+    VARIABLE_FLAGS[a] = "123"
+    VARIABLE_FLAGS[b] = "456"
+    VARIABLE_FLAGS[a} += "789"
+    ```
+
+* 변수 플래그의 종류
+  - postfuncs: 태스크 완료 후 호출될 함수들의 리스트를 지정함 (`do_test1[postfuncs] += "posttest"`: do_test1 태스크 완료 후 posttest 함수 실행)
+  - prefuncs: 태스크 실행 전에 호출될 함수들의 리스트를 지정함
+  - nostamp: 특정 태스크 실행시 스탬프 파일을 생성하지 못하게 함
+  - stamp-extra-info: 태스크 스탬프에 추가할 추가 스탬프의 정보 (오픈임베디드는 이 플래그를 사용해 머신별 작업을 허용함)
+  - deptask: 빌드 의존성
+    * `do_prepare_recipe_sysroot[deptask] = "do_populate_sysroot"`
+    * do_prepare_recipe_sysroot 태스크 실행 전에 DEPENDS 변수에 포함된 레시피의 do_populate_sysroot 레시피를 먼저 실행해야 한다는 뜻이다.
+  - rdeptask: 실행시간 의존성
+    * `do_build[rdeptask] = "do_package_write_rpm"`
+    * do_build 태스크 실행 전에 RDEPENDS 변수에 포함된 패키지의 do_package_write_rpm 태스크를 먼저 실행해야 한다는 뜻이다.
+  - recrdeptask: Recursive 의존성
+    * 어떤 태스크가 실행되기 전에 완료돼야 하는 의존성을 나타냄
+    * 레시피 빌드, 실행 시간 의존성, addtask를 사용한 의존성 모두를 확인한 후 나열된 작업에 대한 의존성을 추가함
+  - recideptask: 추가 의존성을 검사해야 하는 작업을 지정함
+  - depends: 태스크 간 빌드 의존성
+    * `do_image_wic[depends] += "syslinux:do_populate_sysroot"`
+    * syslinux_xx.bb 파일에 정의된 do_populate_sysroot 패키지가 먼저 실행되고 do_image_wic 태스크가 실행된다는 뜻이다.
+  - rdepends: 태스크 간 실행시간 의존성
+  - umask: 파일/디렉토리 생성시 초기 접근 권한을 설정할 때 사용함
+    * umask 값이 '0002'일 경우, 파일의 경우 666-002=664 (-rw-rw-r--)이고 디렉토리의 경우 777-002=775 (drwxrwxr-x)
+    * `do_rootfs[umask] = "022"`: do_rootfs 태스크가 생성한 파일들의 권한이 644로 설정됨
+  - fakeroot: 태스크가 루트 전용으로 작업을 수행할 수 있도록 pseudo 루트 환경을 제공함 (가령 권한 설정 등)
+    * `do_taskname[fakeroot] = "1"`
+    * 변수 플래그를 사용하지 않고 태스크의 이름 앞에 fakeroot 지시자를 넣어서 사용할 수도 있다.
+  - vardeps: 시그니처 계산을 위해 변수의 의존성에 추가할 추가 변수의 공백으로 구분된 목록을 지정함
+  - vardepsexclude: 시그니처 계산을 위해 변수의 의존성에서 제외돼야 하는 공백으로 구분된 변수 목록을 지정함
+  - vardepvalue: 이 플래그가 설정된 경우 bitbake가 변수의 실제 값을 무시하고 대신 변수 시그니처를 계산할 때 지정된 값을 사용하도록 지시함
+  - vardepvalueexclude: 변수 시그니처를 계산할 때 변수값에서 제외할 파이프로 구분된 문자열 목록을 지정함
+  - dirs: 태스크가 실행되기 전에 생성되어야만 하는 디렉토리를 지정함
+
 ## 로그 출력 함수
 
 Log Level | 파이썬 함수 | 셸 함수
@@ -4503,3 +4543,26 @@ d.expand(expression) | expression으로 변수들을 확장해준다.
     }
     ```
   - 다음과 같은 순서로 태스크가 실행된다: do_testB 태스크 파싱 -> anonymous 함수 실행 -> do_testB 태스크 실행 -> do_testA 태스크 파싱 -> anonymous 함수 실행 -> do_testA 태스크 실행
+
+## oe-pkgdata-util 툴
+
+* oe-pkgdata-util 툴은 다양한 패키지 관련 정보를 표시한다.
+  - 단, 이미 빌드된 패키지에 대한 정보만 볼 수 있다.
+  - PKGDATA_DIR 디렉토리에 저장된 정보를 바탕으로 정보를 출력한다. (tmp/pkgdata 디렉토리 아래 있음)
+ 
+* `oe-pkgdata-util find-path <query>`: query로 주어진 경로를 제공하는 모든 패키지들을 출력한다.
+  - `oe-pkgdata-util find-path */libtest.so*`: libtest.so 라이브러리 및 심볼릭 링크의 경로를 찾아줌
+
+* `oe-pkgdata-util list-pkg-files -p <recipe name>`: 주어진 레시피에 대해 레시피가 무슨 파일들을 생성해 내는지 출력한다.
+  - `oe-pkgdata-util list-pkg-files -p makelib`: makelib 레시피가 만들어내는 파일들을 모두 보여줌
+ 
+* `oe-pkgdata-util list-pkgs -p <recipe name>`: 주어진 레시피가 제공하는 각각의 패키지들을 보여준다.
+  - `oe-pkgdata-util list-pkgs -p makelib`: makelib 레시피가 만들어내는 패키지들을 모두 보여줌
+ 
+* `oe-pkgdata-util package-info <package name>`: 주어진 패키지의 정보를 출력한다.
+
+* `oe-pkgdata-util lookup-recipe <package name>`: 주어진 패키지를 만들어 내는 레시피 파일을 찾아낸다.
+
+## PACKAGECONFIG 변수
+
+* PACKAGECONFIG 변수는 특정 레시피에서 지원하는 기능에 대해 활성화/비활성화하는 데 사용하며, 의존성을 설정하는 데에도 사용한다.
