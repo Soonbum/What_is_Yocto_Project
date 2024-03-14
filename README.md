@@ -4608,3 +4608,22 @@ d.expand(expression) | expression으로 변수들을 확장해준다.
   binutils-native           debuginfod
   ...
   ```
+
+## 소스 코드 배포
+
+* 오픈임베디드 코어에서는 프로젝트에서 사용하는 레시피의 소스 코드나 메타데이털르 묶어 배포할 수 있는 기능을 제공한다.
+  - archiver.bbclass 클래스를 사용하면 이미지 생성의 제일 마지막에 tarball 형태의 압축된 소스와 각각의 패치들이 tmp/deploy/sources 디렉토리에 생성된다.
+  - COPYLEFT_LICENSE_EXCLUDE 변수: 라이선스를 가진 레시피를 배제해 소스 코드 배포가 생성되지 않도록 할 수 있음
+  - 환경 설정 파일 local.conf 파일에서 INHERIT += "archiver"를 추가하고 ARCHIVER_MODE 변수를 설정해야 한다.
+  - 단, externalsrc 클래스를 사용한 레시피의 경우 따로 tmp/deploy/sources 디렉토리에 소스가 생성되지 않는다. (fetch 태스크가 생략되므로)
+
+ARCHIVER_MODE 변수 플래그 | 설명
+----- | -----
+ARCHIVER_MODE[src] = "original" | 원본 소스 파일들을 사용한다. (단, 패치가 적용되지 않은 소스)
+ARCHIVER_MODE[src] = "patched" | 패치가 적용된 소스 파일을 사용한다. (기본값)
+ARCHIVER_MODE[src] = "configured" | 설정된 소스 파일들을 사용한다.
+ARCHIVER_MODE[diff] = "1" | do_unpack 태스크와 do_patch 태스크 사이의 패치들을 사용한다.
+ARCHIVER_MODE[diff-exclude] ?= "file file ..." | diff로부터 제외하기를 원하는 파일들과 디렉토리들을 기술함
+ARCHIVER_MODE[dumpdata] = "1" | 환경 설정 데이터를 사용한다.
+ARCHIVER_MODE[recipe] = "1" | 레시피 파일과 인클루드 파일을 사용한다.
+ARCHIVER_MODE[srpm] = "1" | RPM 패키지 파일을 사용한다.
