@@ -4566,3 +4566,45 @@ d.expand(expression) | expression으로 변수들을 확장해준다.
 ## PACKAGECONFIG 변수
 
 * PACKAGECONFIG 변수는 특정 레시피에서 지원하는 기능에 대해 활성화/비활성화하는 데 사용하며, 의존성을 설정하는 데에도 사용한다.
+
+* 컴파일러에게 옵션 추가 전달
+  - EXTRA_OECONF 변수: 해당 레시피를 빌드할 때 컴파일러에게 추가로 전달하는 옵션으로 Yocto 프로젝트의 Autotools 클래스를 상속 받은 경우에 사용할 수 있다.
+  - EXTRA_OECMAKE: CMake를 사용할 경우 EXTRA_OECONF 변수 대신 사용할 수 있다.
+  - EXTRA_OEMESON: Meson을 사용할 경우 EXTRA_OECONF 변수 대신 사용할 수 있다.
+
+* PACKAGECONFIG 사용법
+  - 1번째 인자: 기능이 활성화되어 있다면 1번째 인자는 EXTRA_OECONF 변수에 추가되어 추가적인 환경 설정 스크립트 옵션에 반영된다.
+  - 2번째 인자: 기능이 비활성화되어 있다면 2번째 인자는 EXTRA_OECONF 변수에 추가되어 추가적인 환경 설정 스크립트 옵션에 반영된다.
+  - 3번째 인자: 기능이 활성화되어 있다면 3번째 인자는 추가적인 빌드 의존성을 설정할 수 있다. DEPENDS 변수에 빌드 의존성이 추가된다.
+  - 4번째 인자: 기능이 활성화되어 있다면 4번째 인자는 추가적인 실행 시간 의존성을 설정할 수 있다. RDEPENDS 변수에 실행 시간 의존성이 추가된다.
+  - 5번째 인자: 기능이 활성화되어 있다면 5번째 인자는 약한 실행 시간 의존성을 설정할 수 있다. RRECOMMENDS 변수에 약한 실행 시간 의존성이 추가된다.
+  - 6번째 인자: 설정된 기능에 대해 충돌이 일어날 수 있는 PACKAGECONFIG 설정을 기능한다.
+  - 아래는 wifi, wayland 기능을 정의하고 있다. 인자는 , 기호로 구분된다.
+
+  ```
+  PACKAGECONFIG ??= "wifi wayland"
+  PACKAGECONFIG[wifi] = "--enable-wifi, --disable-wifi, wpa-supplicant, wpa-supplicant"    # wpa-supplicant에 빌드 의존성, 실행 시간 의존성을 갖고 있음 (와이파이 기반 무선 랜 환경을 구축할 때 사용하는 프로그램)
+  PACKAGECONFIG[wayland] = "-Dbackend-wayland=true,-Dbackend-wayland=false,virtual/egl,virtual/libgles2"    # 다중 PROVIDES 중 PREFERRED_PROVIDER 변수를 통해 정해진 레시피를 먼저 빌드함
+  ```
+
+* 다음은 레시피 확장 파일과 환겅 설정 파일에서 PACKAGECONFIG 변수를 설정하는 방법이다.
+  - 레시피 확장 파일(.bbappend): `PACKAGECONFIG:append = " <feature>"
+  - 환경 설정 파일(.conf): "PACKAGECONFIG:append:pn-<recipe file name> = " <feature>"
+ 
+* 각각의 레시피에서 사용할 수 있는 PACKAGECONFIG 변수 플래그는 list-packageconfig-flag.py 스크립트로 확인할 수 있다. (-a 옵션을 넣으면 상세한 내용을 볼 수 있음)
+  ```
+  ~/kirkstone/poky/scripts/contrib$ ./list-packageconfig-flags.py
+
+  RECIPE NAME                PACKAGECONFIG FLAGS
+  ==================================================
+  alsa-utils                bat manpages udev
+  alsa-utils-scripts        bat manpages udev
+  apr                       ipv6 timed-tests xsi-strerror
+  apr-native                ipv6 timed-tests xsi-strerror
+  apr-util                  crypto gdbm ldap sqlite3
+  apr-util-native           crypto gdbm ldap sqlite3
+  aspell                    curses
+  at                        selinux
+  binutils-native           debuginfod
+  ...
+  ```
