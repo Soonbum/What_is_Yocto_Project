@@ -4344,6 +4344,99 @@ do_populate_sysroot       do_package
 
 ... (내용 생략)
 
+# oe-pkgdata-util 툴
+
+* oe-pkgdata-util 툴은 다양한 패키지 관련 정보를 표시한다.
+  - 단, 이미 빌드된 패키지에 대한 정보만 볼 수 있다.
+  - PKGDATA_DIR 디렉토리에 저장된 정보를 바탕으로 정보를 출력한다. (tmp/pkgdata 디렉토리 아래 있음)
+ 
+* `oe-pkgdata-util find-path <query>`: query로 주어진 경로를 제공하는 모든 패키지들을 출력한다.
+  - `oe-pkgdata-util find-path */libtest.so*`: libtest.so 라이브러리 및 심볼릭 링크의 경로를 찾아줌
+
+* `oe-pkgdata-util list-pkg-files -p <recipe name>`: 주어진 레시피에 대해 레시피가 무슨 파일들을 생성해 내는지 출력한다.
+  - `oe-pkgdata-util list-pkg-files -p makelib`: makelib 레시피가 만들어내는 파일들을 모두 보여줌
+ 
+* `oe-pkgdata-util list-pkgs -p <recipe name>`: 주어진 레시피가 제공하는 각각의 패키지들을 보여준다.
+  - `oe-pkgdata-util list-pkgs -p makelib`: makelib 레시피가 만들어내는 패키지들을 모두 보여줌
+ 
+* `oe-pkgdata-util package-info <package name>`: 주어진 패키지의 정보를 출력한다.
+
+* `oe-pkgdata-util lookup-recipe <package name>`: 주어진 패키지를 만들어 내는 레시피 파일을 찾아낸다.
+
+# PACKAGECONFIG 변수
+
+* PACKAGECONFIG 변수는 특정 레시피에서 지원하는 기능에 대해 활성화/비활성화하는 데 사용하며, 의존성을 설정하는 데에도 사용한다.
+
+* 컴파일러에게 옵션 추가 전달
+  - EXTRA_OECONF 변수: 해당 레시피를 빌드할 때 컴파일러에게 추가로 전달하는 옵션으로 Yocto 프로젝트의 Autotools 클래스를 상속 받은 경우에 사용할 수 있다.
+  - EXTRA_OECMAKE: CMake를 사용할 경우 EXTRA_OECONF 변수 대신 사용할 수 있다.
+  - EXTRA_OEMESON: Meson을 사용할 경우 EXTRA_OECONF 변수 대신 사용할 수 있다.
+
+* PACKAGECONFIG 사용법
+  - 1번째 인자: 기능이 활성화되어 있다면 1번째 인자는 EXTRA_OECONF 변수에 추가되어 추가적인 환경 설정 스크립트 옵션에 반영된다.
+  - 2번째 인자: 기능이 비활성화되어 있다면 2번째 인자는 EXTRA_OECONF 변수에 추가되어 추가적인 환경 설정 스크립트 옵션에 반영된다.
+  - 3번째 인자: 기능이 활성화되어 있다면 3번째 인자는 추가적인 빌드 의존성을 설정할 수 있다. DEPENDS 변수에 빌드 의존성이 추가된다.
+  - 4번째 인자: 기능이 활성화되어 있다면 4번째 인자는 추가적인 실행 시간 의존성을 설정할 수 있다. RDEPENDS 변수에 실행 시간 의존성이 추가된다.
+  - 5번째 인자: 기능이 활성화되어 있다면 5번째 인자는 약한 실행 시간 의존성을 설정할 수 있다. RRECOMMENDS 변수에 약한 실행 시간 의존성이 추가된다.
+  - 6번째 인자: 설정된 기능에 대해 충돌이 일어날 수 있는 PACKAGECONFIG 설정을 기능한다.
+  - 아래는 wifi, wayland 기능을 정의하고 있다. 인자는 , 기호로 구분된다.
+
+  ```
+  PACKAGECONFIG ??= "wifi wayland"
+  PACKAGECONFIG[wifi] = "--enable-wifi, --disable-wifi, wpa-supplicant, wpa-supplicant"    # wpa-supplicant에 빌드 의존성, 실행 시간 의존성을 갖고 있음 (와이파이 기반 무선 랜 환경을 구축할 때 사용하는 프로그램)
+  PACKAGECONFIG[wayland] = "-Dbackend-wayland=true,-Dbackend-wayland=false,virtual/egl,virtual/libgles2"    # 다중 PROVIDES 중 PREFERRED_PROVIDER 변수를 통해 정해진 레시피를 먼저 빌드함
+  ```
+
+* 다음은 레시피 확장 파일과 환겅 설정 파일에서 PACKAGECONFIG 변수를 설정하는 방법이다.
+  - 레시피 확장 파일(.bbappend): `PACKAGECONFIG:append = " <feature>"
+  - 환경 설정 파일(.conf): "PACKAGECONFIG:append:pn-<recipe file name> = " <feature>"
+ 
+* 각각의 레시피에서 사용할 수 있는 PACKAGECONFIG 변수 플래그는 list-packageconfig-flag.py 스크립트로 확인할 수 있다. (-a 옵션을 넣으면 상세한 내용을 볼 수 있음)
+  ```
+  ~/kirkstone/poky/scripts/contrib$ ./list-packageconfig-flags.py
+
+  RECIPE NAME                PACKAGECONFIG FLAGS
+  ==================================================
+  alsa-utils                bat manpages udev
+  alsa-utils-scripts        bat manpages udev
+  apr                       ipv6 timed-tests xsi-strerror
+  apr-native                ipv6 timed-tests xsi-strerror
+  apr-util                  crypto gdbm ldap sqlite3
+  apr-util-native           crypto gdbm ldap sqlite3
+  aspell                    curses
+  at                        selinux
+  binutils-native           debuginfod
+  ...
+  ```
+
+# 소스 코드 배포
+
+* 오픈임베디드 코어에서는 프로젝트에서 사용하는 레시피의 소스 코드나 메타데이털르 묶어 배포할 수 있는 기능을 제공한다.
+  - archiver.bbclass 클래스를 사용하면 이미지 생성의 제일 마지막에 tarball 형태의 압축된 소스와 각각의 패치들이 tmp/deploy/sources 디렉토리에 생성된다.
+  - COPYLEFT_LICENSE_EXCLUDE 변수: 라이선스를 가진 레시피를 배제해 소스 코드 배포가 생성되지 않도록 할 수 있음
+  - 환경 설정 파일 local.conf 파일에서 INHERIT += "archiver"를 추가하고 ARCHIVER_MODE 변수를 설정해야 한다.
+  - 단, externalsrc 클래스를 사용한 레시피의 경우 따로 tmp/deploy/sources 디렉토리에 소스가 생성되지 않는다. (fetch 태스크가 생략되므로)
+
+ARCHIVER_MODE 변수 플래그 | 설명
+----- | -----
+ARCHIVER_MODE[src] = "original" | 원본 소스 파일들을 사용한다. (단, 패치가 적용되지 않은 소스)
+ARCHIVER_MODE[src] = "patched" | 패치가 적용된 소스 파일을 사용한다. (기본값)
+ARCHIVER_MODE[src] = "configured" | 설정된 소스 파일들을 사용한다.
+ARCHIVER_MODE[diff] = "1" | do_unpack 태스크와 do_patch 태스크 사이의 패치들을 사용한다.
+ARCHIVER_MODE[diff-exclude] ?= "file file ..." | diff로부터 제외하기를 원하는 파일들과 디렉토리들을 기술함
+ARCHIVER_MODE[dumpdata] = "1" | 환경 설정 데이터를 사용한다.
+ARCHIVER_MODE[recipe] = "1" | 레시피 파일과 인클루드 파일을 사용한다.
+ARCHIVER_MODE[srpm] = "1" | RPM 패키지 파일을 사용한다.
+
+# 이미 만들어져 있는 레이어 포팅하기
+
+* 새로 레이어를 개발하기보다는 다른 사람이 개발한 레이어가 있다면 이를 사용하는 것이 더 현명한 방법이다.
+  - 필요한 부분만 레시피 확장 파일(.bbappend)로 만들어 수정/추가해 주면 된다.
+  - 예를 들어 현재 구축한 시스템에 security 기능, 특히 selinux 기능을 추가한다고 가정하자.
+  - https://layers.openembedded.org 사이트에서 meta-selinux를 검색하고 검색된 리포지터리에서 소스를 받아오자. (`git clone git://git.yoctoproject.org/meta-selinux`)
+  - 다운로드 받은 meta-selinux 레이어의 브랜치를 현재 Poky 버전과 동일하게 맞춘다. (`git checkout kirkstone`)
+  - 새로 다운로드 받은 레이어 아래의 README 파일에서 의존성 관련 정보를 볼 수 있다. 그 외에도 변수 설정 방법이 나와 있으니 그것들을 참조하면 된다.
+
 # devtool
 
 ...
@@ -4543,87 +4636,3 @@ d.expand(expression) | expression으로 변수들을 확장해준다.
     }
     ```
   - 다음과 같은 순서로 태스크가 실행된다: do_testB 태스크 파싱 -> anonymous 함수 실행 -> do_testB 태스크 실행 -> do_testA 태스크 파싱 -> anonymous 함수 실행 -> do_testA 태스크 실행
-
-## oe-pkgdata-util 툴
-
-* oe-pkgdata-util 툴은 다양한 패키지 관련 정보를 표시한다.
-  - 단, 이미 빌드된 패키지에 대한 정보만 볼 수 있다.
-  - PKGDATA_DIR 디렉토리에 저장된 정보를 바탕으로 정보를 출력한다. (tmp/pkgdata 디렉토리 아래 있음)
- 
-* `oe-pkgdata-util find-path <query>`: query로 주어진 경로를 제공하는 모든 패키지들을 출력한다.
-  - `oe-pkgdata-util find-path */libtest.so*`: libtest.so 라이브러리 및 심볼릭 링크의 경로를 찾아줌
-
-* `oe-pkgdata-util list-pkg-files -p <recipe name>`: 주어진 레시피에 대해 레시피가 무슨 파일들을 생성해 내는지 출력한다.
-  - `oe-pkgdata-util list-pkg-files -p makelib`: makelib 레시피가 만들어내는 파일들을 모두 보여줌
- 
-* `oe-pkgdata-util list-pkgs -p <recipe name>`: 주어진 레시피가 제공하는 각각의 패키지들을 보여준다.
-  - `oe-pkgdata-util list-pkgs -p makelib`: makelib 레시피가 만들어내는 패키지들을 모두 보여줌
- 
-* `oe-pkgdata-util package-info <package name>`: 주어진 패키지의 정보를 출력한다.
-
-* `oe-pkgdata-util lookup-recipe <package name>`: 주어진 패키지를 만들어 내는 레시피 파일을 찾아낸다.
-
-## PACKAGECONFIG 변수
-
-* PACKAGECONFIG 변수는 특정 레시피에서 지원하는 기능에 대해 활성화/비활성화하는 데 사용하며, 의존성을 설정하는 데에도 사용한다.
-
-* 컴파일러에게 옵션 추가 전달
-  - EXTRA_OECONF 변수: 해당 레시피를 빌드할 때 컴파일러에게 추가로 전달하는 옵션으로 Yocto 프로젝트의 Autotools 클래스를 상속 받은 경우에 사용할 수 있다.
-  - EXTRA_OECMAKE: CMake를 사용할 경우 EXTRA_OECONF 변수 대신 사용할 수 있다.
-  - EXTRA_OEMESON: Meson을 사용할 경우 EXTRA_OECONF 변수 대신 사용할 수 있다.
-
-* PACKAGECONFIG 사용법
-  - 1번째 인자: 기능이 활성화되어 있다면 1번째 인자는 EXTRA_OECONF 변수에 추가되어 추가적인 환경 설정 스크립트 옵션에 반영된다.
-  - 2번째 인자: 기능이 비활성화되어 있다면 2번째 인자는 EXTRA_OECONF 변수에 추가되어 추가적인 환경 설정 스크립트 옵션에 반영된다.
-  - 3번째 인자: 기능이 활성화되어 있다면 3번째 인자는 추가적인 빌드 의존성을 설정할 수 있다. DEPENDS 변수에 빌드 의존성이 추가된다.
-  - 4번째 인자: 기능이 활성화되어 있다면 4번째 인자는 추가적인 실행 시간 의존성을 설정할 수 있다. RDEPENDS 변수에 실행 시간 의존성이 추가된다.
-  - 5번째 인자: 기능이 활성화되어 있다면 5번째 인자는 약한 실행 시간 의존성을 설정할 수 있다. RRECOMMENDS 변수에 약한 실행 시간 의존성이 추가된다.
-  - 6번째 인자: 설정된 기능에 대해 충돌이 일어날 수 있는 PACKAGECONFIG 설정을 기능한다.
-  - 아래는 wifi, wayland 기능을 정의하고 있다. 인자는 , 기호로 구분된다.
-
-  ```
-  PACKAGECONFIG ??= "wifi wayland"
-  PACKAGECONFIG[wifi] = "--enable-wifi, --disable-wifi, wpa-supplicant, wpa-supplicant"    # wpa-supplicant에 빌드 의존성, 실행 시간 의존성을 갖고 있음 (와이파이 기반 무선 랜 환경을 구축할 때 사용하는 프로그램)
-  PACKAGECONFIG[wayland] = "-Dbackend-wayland=true,-Dbackend-wayland=false,virtual/egl,virtual/libgles2"    # 다중 PROVIDES 중 PREFERRED_PROVIDER 변수를 통해 정해진 레시피를 먼저 빌드함
-  ```
-
-* 다음은 레시피 확장 파일과 환겅 설정 파일에서 PACKAGECONFIG 변수를 설정하는 방법이다.
-  - 레시피 확장 파일(.bbappend): `PACKAGECONFIG:append = " <feature>"
-  - 환경 설정 파일(.conf): "PACKAGECONFIG:append:pn-<recipe file name> = " <feature>"
- 
-* 각각의 레시피에서 사용할 수 있는 PACKAGECONFIG 변수 플래그는 list-packageconfig-flag.py 스크립트로 확인할 수 있다. (-a 옵션을 넣으면 상세한 내용을 볼 수 있음)
-  ```
-  ~/kirkstone/poky/scripts/contrib$ ./list-packageconfig-flags.py
-
-  RECIPE NAME                PACKAGECONFIG FLAGS
-  ==================================================
-  alsa-utils                bat manpages udev
-  alsa-utils-scripts        bat manpages udev
-  apr                       ipv6 timed-tests xsi-strerror
-  apr-native                ipv6 timed-tests xsi-strerror
-  apr-util                  crypto gdbm ldap sqlite3
-  apr-util-native           crypto gdbm ldap sqlite3
-  aspell                    curses
-  at                        selinux
-  binutils-native           debuginfod
-  ...
-  ```
-
-## 소스 코드 배포
-
-* 오픈임베디드 코어에서는 프로젝트에서 사용하는 레시피의 소스 코드나 메타데이털르 묶어 배포할 수 있는 기능을 제공한다.
-  - archiver.bbclass 클래스를 사용하면 이미지 생성의 제일 마지막에 tarball 형태의 압축된 소스와 각각의 패치들이 tmp/deploy/sources 디렉토리에 생성된다.
-  - COPYLEFT_LICENSE_EXCLUDE 변수: 라이선스를 가진 레시피를 배제해 소스 코드 배포가 생성되지 않도록 할 수 있음
-  - 환경 설정 파일 local.conf 파일에서 INHERIT += "archiver"를 추가하고 ARCHIVER_MODE 변수를 설정해야 한다.
-  - 단, externalsrc 클래스를 사용한 레시피의 경우 따로 tmp/deploy/sources 디렉토리에 소스가 생성되지 않는다. (fetch 태스크가 생략되므로)
-
-ARCHIVER_MODE 변수 플래그 | 설명
------ | -----
-ARCHIVER_MODE[src] = "original" | 원본 소스 파일들을 사용한다. (단, 패치가 적용되지 않은 소스)
-ARCHIVER_MODE[src] = "patched" | 패치가 적용된 소스 파일을 사용한다. (기본값)
-ARCHIVER_MODE[src] = "configured" | 설정된 소스 파일들을 사용한다.
-ARCHIVER_MODE[diff] = "1" | do_unpack 태스크와 do_patch 태스크 사이의 패치들을 사용한다.
-ARCHIVER_MODE[diff-exclude] ?= "file file ..." | diff로부터 제외하기를 원하는 파일들과 디렉토리들을 기술함
-ARCHIVER_MODE[dumpdata] = "1" | 환경 설정 데이터를 사용한다.
-ARCHIVER_MODE[recipe] = "1" | 레시피 파일과 인클루드 파일을 사용한다.
-ARCHIVER_MODE[srpm] = "1" | RPM 패키지 파일을 사용한다.
