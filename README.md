@@ -4442,6 +4442,104 @@ ARCHIVER_MODE[srpm] = "1" | RPM 패키지 파일을 사용한다.
 * devtool 명령줄 도구는 소프트웨어 빌드, 테스트, 패키징하는 데 도움이 되는 여러 기능을 제공한다.
   - 앞에서 했던 모든 수동 과정을 자동화해주기 때문에 작업이 용이하다.
   - devtool은 workspace라는 기존의 작업 영역과 분리된 레이어를 사용한다.
+  - 기존의 build/tmp/work 디렉토리에서 소스를 수정하지 않아도 되며, devtool 역시 externalsrc를 사용하므로 작업하던 소스가 삭제될 염려가 없다.
+  - `$ devtool create-workspace [레이어 절대 경로]` (만약 경로 이름을 생략하면 현재 위치에 workspace를 생성한다)
+    * 생성된 workspace 레이어는 conf/layer.conf 파일이 포함되어 있다.
+    * bblayers.conf 파일에 생성된 workspace 레이어의 경로가 자동으로 추가된다.
+    * build/conf 디렉토리에 devtool.conf 파일이 생성된다. (작업 공간인 workspace 레이어의 절대 경로가 기록됨)
+
+### 실습 순서
+
+* kirkstone 소스 받기
+  ```
+  $ git clone https://GitHub.com/yoctoproject/poky.git .
+  $ git checkout kirkstone
+  ```
+
+* devtool을 통해 생성된 바이너리를 QEMU에 전송하려면 이미지에 ssh를 설치해야 한다.
+
+~/kirkstone/poky/meta-poky/conf/local.conf.sample
+```
+...
+EXTRA_IMAGE_FEATURES += "ssh-server-openssh"    # ssh를 설치해야 함
+```
+
+* 빌드 환경 초기화 스크립트를 실행하고 빌드를 진행한다.
+
+```
+~/kirkstone$ source poky/oe-init-build-env
+
+### Shell environment set up for builds. ###
+You can now run 'bitbake <target>'
+Common targets are:
+    core-image-minimal
+    core-image-full-cmdline
+    core-image-sato
+    core-image-weston
+    meta-toolchain
+    meta-ide-support
+
+You can also run generated qemu images with a command like 'runqemu qemux86'
+Other commonly useful commands are:
+ - 'devtool' and 'recipetool' handle common recipe tasks
+ - 'bitbake-layers' handles common layer tasks
+ - 'oe-pkgdata-util' handles common target package tasks
+
+~/kirkstone/build$ bitbake core-image-minimal
+```
+
+* build 디렉토리에서 `$ bitbake-layers create-layer` 명령어를 이용해 새로운 레이어 meta-greatyocto를 생성한다.
+
+```
+~/kirkstone/build$ bitbake-layers create-layer ../poky/meta-greatyocto
+
+NOTE: Starting bitbake server...
+Add your new layer with 'bitbake-layers add-layer poky/meta-greatyocto'
+```
+
+* 다음과 같이 poky 디렉토리에 meta-greatyocto 레이어가 생성된다.
+
+```
+poky/meta-greatyocto/
+|- conf
+|   |- layer.conf
+|- COPYING.MIT
+|- README
+|- recipes-example
+    |- example
+        |- example_0.1.bb
+```
+
+* bitbake가 새로 생성된 레이어를 인식할 수 있돌고 `$ bitbake-layers add-layer` 명령어로 bblayers.conf 파일에 새로 생성된 레이어를 추가한다.
+
+```
+~/kirkstone/build$ bitbake-layers add-layer ../poky/meta-greatyocto/
+
+NOTE: Starting bitbake server...
+```
+
+* 다음과 같이 bblayers.conf 파일에 새로 생성된 meta-greatyocto 레이어가 추가된 것을 볼 수 있다.
+
+```
+~/kirkstone/build$ cat conf/bblayers.conf
+
+# POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+
+POKY_BBLAYERS_CONF_VERSION = "2"
+
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+
+BBLAYERS ?= " \
+/home/user/kirkstone/poky/meta \
+/home/user/kirkstone/poky/meta-poky \
+/home/user/kirkstone/poky/meta-yocto-bsp \
+/home/user/kirkstone/poky/meta-greatyocto \
+"
+```
+
+* devtool을 위한 작업 공간 workspace 레이어를 생성한다.
 
 ...
 
