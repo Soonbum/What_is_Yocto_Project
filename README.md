@@ -4532,14 +4532,135 @@ BBPATH = "${TOPDIR}"
 BBFILES ?= ""
 
 BBLAYERS ?= " \
-/home/user/kirkstone/poky/meta \
-/home/user/kirkstone/poky/meta-poky \
-/home/user/kirkstone/poky/meta-yocto-bsp \
-/home/user/kirkstone/poky/meta-greatyocto \
-"
+  /home/user/kirkstone/poky/meta \
+  /home/user/kirkstone/poky/meta-poky \
+  /home/user/kirkstone/poky/meta-yocto-bsp \
+  /home/user/kirkstone/poky/meta-greatyocto \
+  "
 ```
 
 * devtool을 위한 작업 공간 workspace 레이어를 생성한다.
+
+```
+~/kirkstone/build$ devtool create-workspace workspace
+
+NOTE: Starting bitbake server...
+INFO: Enabling workspace layer in bblayers.conf
+```
+
+* 다음과 같이 bblayers.conf 파일에 workspace 레이어가 새로 추가된 것을 확인할 수 있다.
+
+```
+~/kirkstone/build$ cat conf/bblayers.conf
+
+# POKY_BBLAYERS_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+
+POKY_BBLAYERS_CONF_VERSION = "2"
+
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+
+BBLAYERS ?= " \
+  /home/user/kirkstone/poky/meta \
+  /home/user/kirkstone/poky/meta-poky \
+  /home/user/kirkstone/poky/meta-yocto-bsp \
+  /home/user/kirkstone/poky/meta-greatyocto \
+  /home/user/kirkstone/build/workspace \
+  "
+```
+
+* worksapce 레이어에 새로운 레시피를 추가한다.
+  - `$ devtool add <recipes name> <source name>`
+  - 레시피 이름을 지정하지 않고 url을 지정하여 소스를 fetch 할 수도 있다.
+  - `~/kirkstone/build$ devtool add https://GitHub.com/greatYocto/bbexample.git`
+  - 레시피 이름이 greatyocto인데 이것은 Makefile.am 파일에서 "bin_PROGRAMS = greatyocto"라고 되어 있기 때문이다.
+
+```
+kirkstone/build/workspace/
+|- appends
+|   |- greatyocto_git.bbappend
+|- conf
+|   |- layer.conf
+|- README
+|- recipes
+|   |- greatyocto
+|       |- greatyocto_git.bb
+|- sources
+    |- greatyocto
+        |- autogen.sh
+        |- configure.ac
+        |- LICENSE
+        |- main.c
+        |- Makefile.am
+        |- README
+```
+
+* build/conf/devtool.conf 파일이 생성되고 이 내용은 다음과 같다.
+
+```
+[General]
+workspace_pth = /home/user/kirkstone/build/workspace
+```
+
+* 자동으로 생성된 레시피 파일 greatyocto_git.bb 파일의 내용은 다음과 같다. (기본적으로 recipetool이 생성한 레시피라고 주석에 써있음)
+
+~/kirkstone/build/workspace/recipes/greatyocto/greatyocto_git.bb
+```
+# Recipe created by recipetool
+# This is the basis of a recipe and may need further editing in order to be fully functional.
+# (Feel free to remove these comments when editing.)
+
+# WARNING: the following LICENSE and LIC_FILES_CHKSUM values are best guesses - it is
+# your responsibility to verify that the values are complete and correct.
+
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=1b4446e69313dfe99b262b1ed1dfddc4"
+
+SRC_URI = "git://git@GitHub.com/greatYocto/bbexample.git;protocol=ssh;branch=master"
+
+# Modify these as desired
+PV = "1+git${SRCPV}
+SRCREV = "2d8588ac1cf8d9dd4705e2c8e6757871da791ec2"
+
+S = "${WORKDIR}/git"
+
+# NOTE: if this software is not capable of being built in a separate build directory
+# from the source, you should replace autotools with autotools-brokensep in the
+# inherit line
+
+inherit autotools
+
+# Specify any options you want to pass to the configure script using EXTRA_OECONF:
+EXTRA_OECONF = ""
+```
+
+* 이 경우 소스를 직접 작업 공간인 workspace 레이어로 가져오기 때문에 레이어 확장 파일 greatyocto_git.bbappend에서 externalsrc를 사용해 작업할 수 있게끔 도와준다.
+
+~/kirkstone/build/workspace/appends/greatyocto_git.bbappend
+```
+inherit externalsrc
+EXTERNALSRC = "/home/user/kirkstone/build/workspace/sources/greatyocto"
+```
+
+* 예제가 정상적으로 설치되었는지 확인하기 위해 `$ devtool status` 명령어를 사용한다.
+
+```
+~/kirkstone/build$ devtool status
+
+NOTE: Starting bitbake server...
+greatyocto: / home/user/kirstone/build/workspace/sources/greatyocto
+(/home/user/kirkstone/build/workspace/recipes/greatyocto/greatyocto_git.b)
+```
+
+* 추가된 레시피를 다음과 같이 devtool을 사용해 빌드한다. (`$ devtool build <recipe name>`)
+  - 빌드를 실행하면 bitbake 작업 디렉토리 build/tmp 디렉토리에 패키지 피드 배치 전까지의 태스크가 실행된다. (즉 do_package_write_rpm 태스크 전까지의 태스크들이 실행됨)
+
+```
+~/kirkstone/build$ devtool build greatyocto
+```
+
+* 새로운 창에서 QEMU를 실행시킨다.
 
 ...
 
