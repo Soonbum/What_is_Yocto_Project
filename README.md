@@ -4754,11 +4754,90 @@ root@qemux86-64:~#
           |- linux-yocto
       ```
   - 커널 모듈 소스 작성
+    * 간단한 커널 모듈인 devtool_test.c 파일을 커널 최상위 디렉토리 drivers/misc 디렉토리에 넣는다.
+      ~/kirkstone/build/workspace/sources/linux-yocto/drivers/misc/devtool_test.c
+      ```cpp
+      #include <linux/module.h>
+      #include <linux/kernel.h>
+      #include <linux/init.h>
+
+      MODULE_LICENSE("GPL");
+      MODULE_AUTHOR("user");
+      MODULE_DESCRIPTION("devtool test kernel module");
+      static int __init devtool_test_init(void)
+      {
+          printk(KERN_INFO "Hello devtool test module!\n");
+          return 0;
+      }
+
+      static void __exit devtool_test_cleanup(void)
+      {
+          printk(KERN_INFO "Cleaning up devtool test module.\n");
+      }
+
+      module_init(devtool_test_init);
+      module_exit(devtool_test_cleanup);
+      ```
+    * 기존의 Makefile 파일 제일 하단에 다음 내용을 추가한다.
+      `obj-y += devtool_test.o`
   - 깃을 이용해 변경된 소스 리포지터리에 커밋
+    * 수정된 소스와 레시피 확인을 위해 `$ git status` 명령어를 입력한다.
+    * 변경된 소스에 문제가 없다면 깃의 리포지터리에 커밋하고 devtool을 이용해 빌드를 진행한다. (주의: 빌드시 시간이 많이 소요됨)
+      ```
+      $ ~/kirkstone/build/workspace/sources/linux-yocto$ git add .
+      $ ~/kirkstone/build/workspace/sources/linux-yocto$ git commit -m "Add new kernel module"
+      ...
+      $ ~/kirkstone/build/workspace/sources/linux-yocto$ devtool build linux-yocto
+      ```
   - 원래 작업 공간에 변경 또는 추가된 내용 반영
+    * 커널 소스의 변경/추가가 마무리됐으므로 이 내용을 원래 작업 공간으로 업데이트한다. (다음 2가지 방법 중 택일)
+      - `$ devtool update-recipe <recipe name>` (기존 레시피에 내용을 추가함)
+      - `$ devtool update-recipe -a <layer path> <recipe name>` (레시피 확장 파일을 만듦, 이 방법을 권장함)
+    * `$ ~/kirkstone/build/workspace/sources/linux-yocto$ devtool update-recipe -a ../poky/meta-greatyocto/ linux-yocto`
+    * 명령어를 실행하고 원래 작업 공간인 poky 디렉토리의 meta-greatyocto 디렉토리에 가보면 다음과 같은 디렉토리 구조를 볼 수 있다.
+      ```
+      poky/meta-greatyocto/recipes-kernel/
+      |- linux
+          |- linux-yocto
+          |   |- 0001-Add-new-kernel-module.patch
+          |- linux-yocto_5.15.bbappend
+      ```
+    * linux-yocto_5.15.bbappend 파일은 다음과 같다.
+      ```
+      FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
+      SRC_URI += "file://0001-Add-new-kernel-module.patch"
+      ```
   - workspace 레이어에 존재하는 커널 레시피 파일과 소스 파일 삭제
+    * 소스 변경 작업이 완료되었으므로 workspace 레이어에서 커널 레시피와 소스를 삭제한다.
+    * 커널 레시피는 `$ devtool reset`으로 삭제가 가능하나, 소스는 수작업으로 삭제해야 한다.
+      ```
+      ~/kirkstone/build$ devtool reset linux-yocto
+      ~/kirkstone/build$ rm -rf worspace/sources/linux-yocto/
+      ```
   - QEMU를 통해 변경된 커널 레시피와 패치의 결과 확인
+    * 다시 루트 파일 시스템 생성을 위해 `$ bitbake core-image-minimal -C rootfs`와 같이 빌드를 수행하고, `$ runqemu nographic`을 통해 QEMU를 실행한다.
+    * 다음과 같이 QEMU에서 앞에서 만든 커널 모듈이 실행됐는지 확인해본다.
+      ```
+      root@qemux86-64:~# dmesg | grep "Hello devtool test module"
+      [    1.297494] Hello devtool test module!
+      ```
   - 생성된 workspace 레이어 삭제
+    * 원하는 작업을 모두 마무리했으므로 devtool의 작업 공간 workspace 레이어를 삭제한다: `$ bitbake-layers remove-layer workspace`
+    * build 디렉토리의 workspace 디렉토리도 함께 삭제한다: `$ ~/kirkstone/build$ rm -rf workspace/`
+
+## devtool 명령어 모음
+
+devtool 명령어 | 설명
+------------- | --------------
+`$ devtool add <recipe name> <source name>` | 빌드될 새로운 소프트웨어를 추가한다.
+`$ devtool modify <recipe name>` | 존재하는 레시피의 소스 파일을 수정하는 데 사용된다.
+`$ devtool update-recipe <recipe name> -a <path to custom layer>` | workspace 레이어에서 변경한 내용을 원래 작업 공간에 반영한다.
+`$ devtool build <recipe name>` | 레시피를 빌드한다.
+`$ devtool finish <recipe name> <이동되는 경로>` | 원래 작업 공간으로 생성된 레시피와 패치를 이동시킨다. workspace 레이어에 생성됐던 레시피와 패치는 사라진다.
+`$ devtool deploy-target <recipe name> <타깃의 url>` | 빌드를 통해 생성된 파일들을 타깃으로 전송한다.
+`$ devtool undeploy-target -a <타깃의 url>` | 타깃에서 레시피의 출력 파일들을 제거한다.
+`$ devtool status` | workspace 레이어의 상태를 보여준다.
+
 
 # 부록: 문법 설명
 
