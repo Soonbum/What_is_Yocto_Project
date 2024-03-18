@@ -4661,6 +4661,81 @@ greatyocto: / home/user/kirstone/build/workspace/sources/greatyocto
 ```
 
 * 새로운 창에서 QEMU를 실행시킨다.
+  - 같은 호스트에서 또 다른 터미널을 띄우고 다음 명령어를 실행한다.
+    ```
+    $ source poky/oe-init-build-env
+    $ runqemu nographic
+    ```
+
+* QEMU를 통해 새로 생성된 바이너리를 테스트한다.
+  - 같은 호스트에 QEMU가 동작하고 있는 터미널은 그대로 두고, 작업하던 터미널 창에서 다음과 같은 명령을 입력해 새로 빌드된 패키지를 QEMU로 배포한다. (타깃 시스템에 SSH 서버(ssh-server-openssh)가 실행 중이어야 함)
+  - `$ devtool deploy-target <recipe name> <타깃의 url>`
+  - `$ devtool deploy-target -s greatyocto` (명령어에 의해 생성된 파일을 타깃으로 전송)
+  - 만약 'WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!' 오류가 발생하면 `$ ssh-keygen -R 192.168.7.2` 명령어를 입력하고 다시 시도해 본다.
+
+* QEMU에서 greatyocto 바이너리를 실행한다.
+
+```
+root@qemux86-64:~# greatyocto
+
+Hello great yocto!
+```
+
+* 타깃에 설치된 바이너리를 제거한다.
+  - `$ devtool undeploy-target <recipe name> <타깃의 url>`
+  - `$ devtool undeploy-target -a <타깃의 url>` (이렇게 하면 모든 바이너리를 제거함)
+  - `$ devtool undeploy-target greatyocto root@192.168.7.2`
+
+* 소스를 수정하고 재빌드한다.
+  - 소스의 위치는 '~/kirkstone/build/workspace/sources/greatyocto/main.c'이다.
+  - 소스에서 printf 내용을 바꿔보고 다시 빌드한다.
+    ```
+    $ git add main.c
+    $ git commit -m "source is changed"
+    $ devtool build greatyocto
+    ```
+
+* 기존의 작업 공간에 새로 생성된 greatyocto 레시피를 추가한다.
+  - 작업이 완료됐으므로 수정된 소스 파일과 레시피를 원래의 작업 공간으로 이동시킨다.
+  - `$ devtool finish <recipe name> <이동되는 경로>`
+  - `$ devtool finish greatyocto ../poky/meta-greatyocto/`
+  - 위 명령어를 실행하면 이전에 수정한 소스의 패치가 자동으로 생성되어 원래의 작업 공간으로 이동하게 된다.
+  - 다음과 같이 예제 레시피와 패치 파일이 원래의 작업 공간으로 이동된다.
+
+```
+meta-greatyocto/
+|- conf
+|   |- layer.conf
+|- COPYING.MIT
+|- README
+|- recipes-example
+|   |- example
+|       |- example_0.1.bb
+|- recipes-greatyocto
+    |- greatyocto
+        |- greatyocto
+        |   |- 0001-source-is-changed.patch
+        |- greatyocto_git.bb
+```
+
+* 하지만 소스 파일이 여전히 존재하기 때문에 다음과 같이 소스 파일을 수작업으로 삭제해 줘야 한다.
+  - `~/kirkstone/build/workspace/sources$ rm -rf greatyocto/`
+
+* 이미지 빌드 및 QEMU 실행을 통해 확인한다.
+  - 이제 추가된 레시피의 패키지가 루트 파일 시스템에 추가되도록 build/conf 디렉토리에 local.conf 파일 제일 하단에 다음 내용을 추가한다.
+  - `CORE_IMAGE_EXTRA_INSTALL += "greatyocto"`
+
+* 원래 작업 공간에서 `$ bitbake core-image-minimal -C rootfs`를 통해 루트 파일 시스템을 다시 생성한다.
+
+* `$ runqemu nographic` 명령을 입력하고 QEMU를 통해 변경된 바이너리 결과를 확인한다.
+
+```
+root@qemux86-64:~# greatyocto
+It's changed!
+root@qemux86-64:~# 
+```
+
+## devtool을 이용한 커널 모듈 생성
 
 ...
 
