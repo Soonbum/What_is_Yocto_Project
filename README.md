@@ -25,6 +25,8 @@
   6. 패키지 생성
   7. 부트 이미지 생성
 
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/b5c2521f-2a8d-44c8-a260-11c4d1df0743)
+
 ## 실습 환경
 
 * 예제는 ubuntu 18.04, Yocto dunfell 버전을 기반으로 설명할 것이다. (Yocto, 쉽게 이해하고 깊게 다루기 -조운래 저- 참조)
@@ -43,6 +45,8 @@
 * bitbake: 파이썬, 셸 스크립트 혼합 코드를 분석하는 작업 스케줄러, 임베디드 리눅스의 크로스 컴파일을 위한 패키지 및 관련 파일을 빌드하는 데 사용되는 도구
   - GNU Make가 Makefile을 사용하는 것처럼, bitbake는 .bb 파일(메타데이터)을 사용하여 빌드한다.
   - Poky 안에 포함되어 있지만 단독으로도 여러 가지를 수행할 수 있음
+
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/f02a4438-64b0-4919-ac20-66f3744809af)
 
 ## bitbake 설치 및 실행
 
@@ -180,7 +184,7 @@ poky_src/
     |- meta            # 오픈임베디드 코어 레이어
     |- meta-poky       # Yocto 배포 참조 레이어
     |- meta-selftest   # oe-selftest 스크립트가 사용하는 bitbake 테스트 레이어
-    |- meta-skeleton   # 커스텀 레이어를 생성하는 데 사용되는 템플릿 레이어
+    |- meta-skeleton   # 소프트웨어 레이어를 생성하는 데 사용되는 템플릿 레이어
     |- meta-yocto-bsp  # Yocto 프로젝트의 BSP 레이어
     |- scripts
 ```
@@ -1597,6 +1601,8 @@ $ bitbake core-image-minimal
 
 # BSP 레이어 작성
 
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/ddbcc186-567f-493f-a8b5-ce394dc01683)
+
 * 이번 장에서는 great라는 이름을 가진 가상의 타깃 시스템을 만들 예정이다.
   - 바닐라 커널 version 5.4, u-boot
   - 머신 이름: great
@@ -1607,7 +1613,7 @@ $ bitbake core-image-minimal
 
 레이어 구조 | 설명
 ----------- | -----
-커스텀 레이어 (./meta-myproject) | 만들어야 할 레이어
+소프트웨어 레이어 (./meta-myproject) | 만들어야 할 레이어
 배포 레이어 (./meta-great) | 만들어야 할 레이어
 BSP 레이어 (./meta-great-bsp) | 만들어야 할 레이어
 포키 참조 배포 레이어 (./meta-poky) | 기본 제공 레이어
@@ -1741,7 +1747,7 @@ $ runqemu great-image nographic
 
 | 레이어 구조 |
 | ----------- |
-| 커스텀 레이어 (./meta-myproject) |
+| 소프트웨어 레이어 (./meta-myproject) |
 | 배포 레이어 (./meta-great) |
 | BSP 레이어 (./meta-great-bsp) |
 | 포키 참조 배포 레이어 (./meta-poky) |
@@ -2006,6 +2012,8 @@ $ runqemu great-image nographic
 ```
 
 # 커널 레시피
+
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/0fc17250-3fbb-4d1b-b2b2-829eb1ee23fb)
 
 * 커널 레시피: kernel 클래스를 상속한 레시피
   - kernel-yocto-bbclass 클래스 파일을 상속하여 kernel 클래스의 기능을 확장할 수 있다.
@@ -2933,7 +2941,7 @@ $ runqemu great-image nographic
 
 | 레이어 구조 |
 | ----------- |
-| 커스텀 레이어 (./meta-myproject) |
+| 소프트웨어 레이어 (./meta-myproject) |
 | 배포 레이어 (./meta-great) |
 | BSP 레이어 (./meta-great-bsp) |
 | 포키 참조 배포 레이어 (./meta-poky) |
@@ -3111,11 +3119,11 @@ DISTRO_FEATURES | IMAGE_FEATURES | MACHINE_FEATURES
   - 커널의 디바이스 드라이버가 준비되지 않은 상태이기 때문에 wifi에 필요한 미들웨어나 애플리케이션은 설치되지 않는다.
 
 
-# 커스텀 레이어 작성
+# 소프트웨어 레이어 작성
 
 | 레이어 구조 |
 | ----------- |
-| 커스텀 레이어 (./meta-myproject) |
+| 소프트웨어 레이어 (./meta-myproject) |
 | 배포 레이어 (./meta-great) |
 | BSP 레이어 (./meta-great-bsp) |
 | 포키 참조 배포 레이어 (./meta-poky) |
@@ -3123,7 +3131,7 @@ DISTRO_FEATURES | IMAGE_FEATURES | MACHINE_FEATURES
 
 * BSP, 배포 레이어는 칩을 제공하는 벤더에서 배포하므로 처음부터 만들 필요는 거의 없다.
 
-* 실제로 추가/수정해야 하는 레이어는 커스텀 레이어가 될 것이다.
+* 실제로 추가/수정해야 하는 레이어는 소프트웨어 레이어가 될 것이다.
   - 생성한 애플리케이션이나 필요에 따라 커널이나 부트로더를 수정할 수 있고, 새로 추가되는 기능을 위해 배포 정책을 수정할 수도 있다.
   - Yocto는 기존의 메타데이터들을 수정하기보다는 새롭게 레이어를 만들어 추가/수정하도록 권고한다.
   - 레시피 확장 파일(.bbappend)을 사용해 추가/수정해야 한다.
@@ -3272,6 +3280,9 @@ $ bitbake great-image
 $ runqemu great-image nographic
 ```
 
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/ee9288c6-4d18-4157-ba95-3500f2708b45)
+
+
 # 패키지
 
 * 패키지: 타깃 시스템에 배포/설치를 위해 소프트웨어 바이너리, 라이브러리, 헤더 등을 하나의 묶음 파일로 만드는 절차
@@ -3408,6 +3419,8 @@ do_populate_sysroot       do_package
   - 이전 태스크들까지는 태스크 산출물들이 ${WORKDIR}에 있었지만, do_packagedata 태스크부터는 태스크의 산출물이 전역적으로 사용될 수 있도록 상위 디렉토리에 저장된다. (예: build/tmp/pkgdata/great/)
 
 ### do_package_write_rpm 태스크
+
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/a6769961-2f70-417b-973b-3ebbef680e09)
 
 * do_package_write_rpm 태스크: RPM 패키지를 생성하고, 생성된 패키지를 ${TMPDIR}/deploy/rpm 디렉토리(Package Feed)에 위치시킨다.
   - 만약 커스텀 패키지 생성을 위해 PACKAGES 변수에 포함되지 않은 패키지가 필요할 경우, PACKAGE_BEFORE_PN 변수를 사용한다. (${PN} 패키지 생성 직전에 삽입됨)
@@ -3592,6 +3605,8 @@ cat.c    cat.o    dog.c    dog.o    func.h    libtest.so.1.0
 ```
 
 * do_package 태스크는 패키지를 분류해 ${WORKDIR}/packages-split 디렉토리에 배치한다. 분리된 패키지들은 각각 rpm 파일로 만들어진다.
+
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/f1370049-6a1f-422a-8320-fe9c861ffdc7)
 
 ```
 ~/poky_src/build5/tmp/work/core2-64-great-linux/makelib/1.0-r0/packages-split
@@ -4072,6 +4087,8 @@ pkg_postinst_ontarget_${PN} () {
 
 # do_image 태스크
 
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/921ac41f-b8ac-4506-9521-4f095db8e81c)
+
 ```
                 do_fetch
                      |
@@ -4117,6 +4134,8 @@ do_populate_sysroot       do_package
 * do_image 태스크: 이미지 생성을 시작하는 태스크
   - do_image 태스크는 오픈임베디드 빌드 시스템이 do_rootfs 태스크 실행이 완료되고 실행된다.
   - do_image 태스크가 실행되는 동안 이미지에 설치되는 패키지들이 식별되며, 최종적으로 루트 파일 시스템이 생성된다.
+
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/95d4804f-6ed5-4bef-a1ec-57ac38aace32)
 
 * 루트 파일 시스템: 계층적 파일 트리의 최상단에 있으며 여기에는 시스템 부팅을 위한 장치 디렉토리 및 프로그램을 포함해 시스템 동작에 중요한 파일/디렉토리가 포함된다.
   - 오픈임베디드 코어는 image_type.bbclass 클래스를 제공해 다양한 파일 시스템의 루트 파일 시스템을 생성한다.
@@ -4359,6 +4378,12 @@ EXTRA_USERS_PARAMS = " \
 ```
 
 # SDK(Software Development Kit)
+
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/84a9f0ad-ca32-4f5c-93bf-33457a5e4028)
+
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/de05fe93-de73-445e-8756-c3f7fb9f8fdd)
+
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/6e02b6de-0bb8-48f1-a623-a32c36437842)
 
 * Yocto의 주요 목적은 리눅스 배포판을 생성하는 것이다.
   - 그러나 Yocto를 이용해 새롭게 패키지를 개발하고자 한다면 따로 개발 환경을 구축해야 한다.
