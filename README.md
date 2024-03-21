@@ -315,6 +315,10 @@ poky_src/
 
 ## 소스 다운로드 절차
 
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/adfcc5d7-bc4b-49fe-81f5-7ca0454bc1c6)
+
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/11dfc064-224a-4bcb-8022-0c1b783cf3ae)
+
 * 레시피 파일(.bb, .bbappend)의 SRC_URI 변수에 다운로드할 소스의 위치를 지정한다.
 * DL_DIR 변수가 가리키는 경로에 소스가 저장된다.
   - 기본값: poky_src/build/downloads (bitbake.conf 파일의 780 라인에 '{TOPDIR}/downloads'라고 지정되어 있음)
