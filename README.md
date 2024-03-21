@@ -575,6 +575,10 @@ FILES_${PN} += "${bindir}/hello"
 
 ## 레시피 파일 빌드하기
 
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/59f62750-ac57-4a7b-9e7f-25d20e467732)
+
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/73928095-be41-4af2-bc1c-77f9a8f8ec87)
+
 ```
 $ bitbake hello -c cleanall    # cleanall 태스크만 수행 (WORKDIR 변수가 가리키는 빌드 작업 디렉토리의 모든 결과물 삭제)
 $ bitbake hello                # 기본 태스크 수행 (기본 태스크를 나타내는 변수: BB_DEFAULT_TASK)
