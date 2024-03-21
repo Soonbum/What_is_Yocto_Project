@@ -201,6 +201,8 @@ poky_src/
   - `source oe-init-build-env`를 실행해야 bitbake 등 빌드 명령어를 실행할 수 있음
   - `~/poky_src$ source poky/oe-init-build-env`를 실행하면 다음과 같은 conf 파일이 생성된다.
 
+![image](https://github.com/Soonbum/What_is_Yocto_Project/assets/16474083/fc151e20-85c6-427f-b5f7-cbad387ba030)
+
 ```
 poky_src/
 |- build
