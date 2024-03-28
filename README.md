@@ -242,8 +242,10 @@ poky_src/
     |- build           # source oe-init-build-env를 실행했을 때 생성됨
     |   |- buildhistory              # 빌드 히스토리가 기록됨
     |   |- conf
-    |   |   |- local.conf            # 빌드 환경에 대한 모든 로컬 사용자 구성이 포함되어 있음 (전역 환경 설정)
-    |   |   |- bblayers.conf         # bitbake가 찾아야 하는 레이어 목록이 기록되어 있음
+    |   |   |- local.conf            # 환경 설정 파일, bitbake.conf 파일에서 이 파일을 인클루드해 사용한다. (타깃 머신 지정, 크로스 툴체인 지정, 전역 변수 처리)
+    |   |   |- bblayers.conf         # 생성된 레이어들의 정보를 bitbake에게 알려줌, 레이어들의 경로는 BBLAYERS 변수에 할당됨
+    |   |   |- bitbake.conf          # 메인 환경 설정 파일
+    |   |   |- templateconf.cfg      # 프로젝트를 생성하는 데 사용되는 템플릿 환경 설정을 포함하는 디렉토리를 포함하고 있음
     |   |- cache
     |   |   |- sanity_info           # 빌드 중에 생성되며 완전성 검사 상태를 의미함
     |   |- downloads                 # 다운로드된 소스 파일이 보관됨 (DL_DIR 변수)
