@@ -3911,7 +3911,7 @@ do_populate_sysroot       do_package
                           do_rootfs
                                 |
                                 v
-                          do_iamge
+                          do_image
 ```
 
 * Package Feed에 배치된 rpm 파일들을 루트 파일 시스템에 설치하는 과정을 배울 것이다.
