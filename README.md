@@ -239,7 +239,7 @@ poky_src/
 poky_src/
 |- poky
     |- bitbake         # bitbake 실행 파일이 들어 있음
-    |- build           # source oe-init-build-env를 실행했을 때 생성됨
+    |- build           # source oe-init-build-env를 실행했을 때 생성됨 (${TOPDIR})
     |   |- buildhistory              # 빌드 히스토리가 기록됨
     |   |- conf
     |   |   |- local.conf            # 환경 설정 파일, bitbake.conf 파일에서 이 파일을 인클루드해 사용한다. (타깃 머신 지정, 크로스 툴체인 지정, 전역 변수 처리)
@@ -248,12 +248,12 @@ poky_src/
     |   |   |- templateconf.cfg      # 프로젝트를 생성하는 데 사용되는 템플릿 환경 설정을 포함하는 디렉토리를 포함하고 있음
     |   |- cache
     |   |   |- sanity_info           # 빌드 중에 생성되며 완전성 검사 상태를 의미함
-    |   |- downloads                 # 다운로드된 소스 파일이 보관됨 (DL_DIR 변수)
-    |   |- sstate-cache              # 공유 상태 캐시가 포함되어 있음 (SSTATE_DIR 변수)
-    |   |- tmp                       # 모든 빌드 시스템의 출력물이 여기에 보관됨 (TMPDIR 변수)
+    |   |- downloads                 # 다운로드된 소스 파일이 보관됨 (${DL_DIR})
+    |   |- sstate-cache              # 공유 상태 캐시가 포함되어 있음 (${SSTATE_DIR})
+    |   |- tmp                       # 모든 빌드 시스템의 출력물이 여기에 보관됨 (${TMPDIR})
     |   |   |- buildstats            # 빌드 통계가 저장됨
     |   |   |- cache                 # 메타데이터(레시피, 환경설정) 구문 분석할 때 결과를 캐시하여 향후 빌드 속도를 높임, 머신별로 결과가 저장됨
-    |   |   |- deploy                # 빌드 프로세스의 최종 결과물이 저장됨 (DEPLOY_DIR 변수)
+    |   |   |- deploy                # 빌드 프로세스의 최종 결과물이 저장됨 (${DEPLOY_DIR})
     |   |   |   |- deb
     |   |   |   |- rpm
     |   |   |   |- ipk
@@ -261,28 +261,29 @@ poky_src/
     |   |   |   |- images
     |   |   |   |- sdk
     |   |   |- sstate-control        # 공유 상태 매니페스트 파일이 저장됨
-    |   |   |- sysroots-components   # do_prepare_recipe_sysroot 태스크가 DEPENDS 레시피에 대해 특정 sysroot로 링크하거나 복사하는 sysroot 내용물의 위치 (COMPONENTS_DIR 변수)
+    |   |   |- sysroots-components   # do_prepare_recipe_sysroot 태스크가 DEPENDS 레시피에 대해 특정 sysroot로 링크하거나 복사하는 sysroot 내용물의 위치  (${COMPONENTS_DIR})
     |   |   |- sysroots
     |   |   |- stamps                # bitbake 작업을 위해 기록하는 태스크별 타임 스탬프를 저장함
-    |   |   |- log                   # WORKDIR을 사용하지 배치되지 않은 일반 로그가 포함되어 있음
+    |   |   |- log                   # ${WORKDIR}에 배치되지 않은 일반 로그가 포함되어 있음
     |   |   |- work                  # 빌드한 패키지에 대한 아키텍처별 작업 하위 디렉토리가 포함되어 있음
-    |   |   |   |- tunearch
-    |   |   |       |- recipename
-    |   |   |           |- version   # 레시피 작업 디렉토리 (WORKDIR 변수)
+    |   |   |   |- tunearch          # (${PACKAGE_ARCH}-poky-${TARGET_OS} 또는 ${MACHINE}-poky-${TARGET_OS} 형태를 가짐)
+    |   |   |       |- recipename    # 레시피 이름 (${PN})
+    |   |   |           |- version   # 레시피 작업 디렉토리 (${WORKDIR}: ${PV}-${PR})
     |   |   |               |- temp                     # 이 레시피에 대해 실행된 각 태스크의 로그 파일, 실행 파일 등이 들어 있음
-    |   |   |               |- image                    # do_install 태스크의 출력이 저장됨 (해당 태스크의 D 변수)
+    |   |   |               |- image                    # do_install 태스크의 출력이 저장됨 (해당 태스크의 ${D})
     |   |   |               |- pseudo                   # 레시피에 대해 의사 실행된 모든 태스크에 대한 의사 데이터베이스 및 로그가 포함되어 있음
     |   |   |               |- sysroot-destdir          # do_populate_sysroot 태스크의 출력이 저장됨
     |   |   |               |- package                  # 개별 패키지로 분할되기 전 do_package 태스크의 출력이 저장됨
     |   |   |               |- packages-split           # 개별 패키지로 분할된 후의 태스크 출력이 저장됨
     |   |   |               |- recipe-sysroot           # 레시피의 대상 종속성이 저장된 디렉토리 (C 라이브러리 등)
     |   |   |               |- recipe-sysroot-native    # 레시피의 기본 종속성이 저장된 디렉토리 (컴파일러, autoconf, libtool 등)
-    |   |   |               |- build                    # 소스가 빌드 아티팩트와 분리된 빌드를 지원하는 레시피에만 적용됨 (B 변수)
+    |   |   |               |- build                    # 소스가 빌드 아티팩트와 분리된 빌드를 지원하는 레시피에만 적용됨 (${B})
     |   |   |- work-shared           # 다른 레시피와 작업 디렉토리를 공유하는 레시피를 저장함 (libgcc, gcc-runtime 등)
     |- contrib
     |- documentation   # Yocto 프로젝트 문서의 소스와 PDF/HTML 버전 매뉴얼을 생성할 수 있는 템플릿 및 도구가 있음
     |- meta            # 오픈임베디드 코어 레이어
     |   |- classes
+    |   |   |- base.bbclass    # 전역 클래스 파일
     |   |- conf
     |   |   |- machine
     |   |   |- distro
@@ -306,6 +307,10 @@ poky_src/
     |- meta-yocto-bsp  # Yocto 프로젝트의 BSP 레이어
     |- meta-selftest   # oe-selftest 스크립트가 사용하는 bitbake 테스트 레이어 (오픈임베디드 자체 테스트에서 빌드 시스템의 동작을 확인하는 데 사용되는 추가 레시피와 추가 파일이 있음)
     |- meta-skeleton   # BSP, 커널 개발을 위한 템플릿 레이어
+    |- meta-custom             # 사용자가 추가한 소프트웨어 레이어
+    |   |- conf
+    |   |   |- layer.conf      # 레시피 파일의 위치를 알려줌
+    |   |- custom.bb           # 레시피 파일
     |- scripts
 ```
 
