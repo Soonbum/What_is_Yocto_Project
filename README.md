@@ -3327,11 +3327,11 @@ PACKAGE_CLASSES ?= "package_rpm"
                      v
                 do_unpack
                      |
-                     |  ----> ${S}에 압축 해제된 소스 코드 저장
+                     |  ----> ${WORKDIR}/${S}에 압축 해제된 소스 코드 저장 (${S} = ${BPN}-${PV})
                      v
                 do_patch
                      |
-                     |  ----> ${S}에 패치(patch) 적용
+                     |  ----> ${WORKDIR}/${S}에 패치(patch) 적용 (${S} = ${BPN}-${PV})
                      v
                 do_prepare_recipe_sysroot
                      |
@@ -3339,15 +3339,15 @@ PACKAGE_CLASSES ?= "package_rpm"
                      v
                 do_configure
                      |
-                     |  ----> ${B}에 소프트웨어 구성
+                     |  ----> ${WORKDIR}/${B}에 소프트웨어 구성 (${B}는 보통 build를 가리킴)
                      v
                 do_compile
                      |
-                     |  ----> ${B}에 소프트웨어 컴파일
+                     |  ----> ${WORKDIR}/${B}에 소프트웨어 컴파일
                      v
                 do_install
                      |
-                     |  ----> ${D}에 소프트웨어 설치
+                     |  ----> ${WORKDIR}/${D}에 소프트웨어 설치 (${D}는 보통 image를 가리킴)
          ------------------------
          |                      |
          |                      |
@@ -3882,40 +3882,53 @@ $ runqemu great-image nographic
 ```
                 do_fetch
                      |
+                     |  ----> ${DL_DIR}에 소스 코드 저장
                      v
                 do_unpack
                      |
+                     |  ----> ${WORKDIR}/${S}에 압축 해제된 소스 코드 저장 (${S} = ${BPN}-${PV})
                      v
                 do_patch
                      |
+                     |  ----> ${WORKDIR}/${S}에 패치(patch) 적용 (${S} = ${BPN}-${PV})
                      v
                 do_prepare_recipe_sysroot
                      |
+                     |  ----> ${WORKDIR}에 특정 sysroots로 파일 설치
                      v
                 do_configure
                      |
+                     |  ----> ${WORKDIR}/${B}에 소프트웨어 구성 (${B}는 보통 build를 가리킴)
                      v
                 do_compile
                      |
+                     |  ----> ${WORKDIR}/${B}에 소프트웨어 컴파일
                      v
                 do_install
                      |
+                     |  ----> ${WORKDIR}/${D}에 소프트웨어 설치 (${D}는 보통 image를 가리킴)
          ------------------------
+         |                      |
          |                      |
          v                      v
 do_populate_sysroot       do_package
                                 |
+                                |  ----> ${WORKDIR}/package, ${WORKDIR}/packages-split에 파일 패키지화, ${WORKDIR}/pkgdata에 패키지 메타데이터 저장
                                 v
                           do_packagedata
                                 |
+                                |  ----> ${TMPDIR}/pkgdata/${MACHINE}에 데이터 생성됨
                                 v
                           do_package_write_rpm
                                 |
+                                |  ----> ${DEPLOY_DIR}/rpm (이 디렉토리를 Package Feed라고 함)에 패키지 생성됨
                                 v
                           do_package_qa
                                 |
+                                |
                                 v
                           do_rootfs
+                                |
                                 |
                                 v
                           do_image
@@ -4109,40 +4122,53 @@ pkg_postinst_ontarget_${PN} () {
 ```
                 do_fetch
                      |
+                     |  ----> ${DL_DIR}에 소스 코드 저장
                      v
                 do_unpack
                      |
+                     |  ----> ${WORKDIR}/${S}에 압축 해제된 소스 코드 저장 (${S} = ${BPN}-${PV})
                      v
                 do_patch
                      |
+                     |  ----> ${WORKDIR}/${S}에 패치(patch) 적용 (${S} = ${BPN}-${PV})
                      v
                 do_prepare_recipe_sysroot
                      |
+                     |  ----> ${WORKDIR}에 특정 sysroots로 파일 설치
                      v
                 do_configure
                      |
+                     |  ----> ${WORKDIR}/${B}에 소프트웨어 구성 (${B}는 보통 build를 가리킴)
                      v
                 do_compile
                      |
+                     |  ----> ${WORKDIR}/${B}에 소프트웨어 컴파일
                      v
                 do_install
                      |
+                     |  ----> ${WORKDIR}/${D}에 소프트웨어 설치 (${D}는 보통 image를 가리킴)
          ------------------------
+         |                      |
          |                      |
          v                      v
 do_populate_sysroot       do_package
                                 |
+                                |  ----> ${WORKDIR}/package, ${WORKDIR}/packages-split에 파일 패키지화, ${WORKDIR}/pkgdata에 패키지 메타데이터 저장
                                 v
                           do_packagedata
                                 |
+                                |  ----> ${TMPDIR}/pkgdata/${MACHINE}에 데이터 생성됨
                                 v
                           do_package_write_rpm
                                 |
+                                |  ----> ${DEPLOY_DIR}/rpm (이 디렉토리를 Package Feed라고 함)에 패키지 생성됨
                                 v
                           do_package_qa
                                 |
+                                |
                                 v
                           do_rootfs
+                                |
                                 |
                                 v
                           do_image
@@ -4422,37 +4448,49 @@ EXTRA_USERS_PARAMS = " \
 ```
                 do_fetch
                      |
+                     |  ----> ${DL_DIR}에 소스 코드 저장
                      v
                 do_unpack
                      |
+                     |  ----> ${WORKDIR}/${S}에 압축 해제된 소스 코드 저장 (${S} = ${BPN}-${PV})
                      v
                 do_patch
                      |
+                     |  ----> ${WORKDIR}/${S}에 패치(patch) 적용 (${S} = ${BPN}-${PV})
                      v
                 do_prepare_recipe_sysroot
                      |
+                     |  ----> ${WORKDIR}에 특정 sysroots로 파일 설치
                      v
                 do_configure
                      |
+                     |  ----> ${WORKDIR}/${B}에 소프트웨어 구성 (${B}는 보통 build를 가리킴)
                      v
                 do_compile
                      |
+                     |  ----> ${WORKDIR}/${B}에 소프트웨어 컴파일
                      v
                 do_install
                      |
+                     |  ----> ${WORKDIR}/${D}에 소프트웨어 설치 (${D}는 보통 image를 가리킴)
          ------------------------
+         |                      |
          |                      |
          v                      v
 do_populate_sysroot       do_package
                                 |
+                                |  ----> ${WORKDIR}/package, ${WORKDIR}/packages-split에 파일 패키지화, ${WORKDIR}/pkgdata에 패키지 메타데이터 저장
                                 v
                           do_packagedata
                                 |
+                                |  ----> ${TMPDIR}/pkgdata/${MACHINE}에 데이터 생성됨
                                 v
                           do_package_write_rpm
                                 |
+                                |  ----> ${DEPLOY_DIR}/rpm (이 디렉토리를 Package Feed라고 함)에 패키지 생성됨
                                 v
                           do_package_qa
+                                |
                                 |
                                 v
                           do_populate_sdk
